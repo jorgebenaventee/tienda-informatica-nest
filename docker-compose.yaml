@@ -5,11 +5,11 @@ services:
     restart: always
     env_file: .env
     environment:
-      POSTGRES_USER: ${DATABASE_USER}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DATABASE}
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin1234
+      POSTGRES_DB: clowns
     ports:
-      - ${POSTGRES_PORT}:5432
+      - 5432:5432
     #volumes:
     #- ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:

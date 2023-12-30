@@ -3,9 +3,11 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
-  Patch,
+  ParseUUIDPipe,
   Post,
+  Put,
 } from '@nestjs/common'
 import { SuppliersService } from '../services/suppliers.service'
 import { CreateSupplierDto } from '../dto/create-supplier.dto'
@@ -15,31 +17,33 @@ import { UpdateSupplierDto } from '../dto/update-supplier.dto'
 export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}
 
-  @Post()
-  create(@Body() createSupplierDto: CreateSupplierDto) {
-    return this.suppliersService.create(createSupplierDto)
-  }
-
   @Get()
   findAll() {
     return this.suppliersService.findAll()
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.suppliersService.findOne(+id)
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.suppliersService.findOne(id)
   }
 
-  @Patch(':id')
+  @Post()
+  create(@Body() createSupplierDto: CreateSupplierDto) {
+    return this.suppliersService.create(createSupplierDto)
+  }
+
+  @Put(':id')
+  @HttpCode(201)
   update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateSupplierDto: UpdateSupplierDto,
   ) {
-    return this.suppliersService.update(+id, updateSupplierDto)
+    return this.suppliersService.update(id, updateSupplierDto)
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.suppliersService.remove(+id)
+  @HttpCode(204)
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.suppliersService.remove(id)
   }
 }

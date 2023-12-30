@@ -5,6 +5,7 @@ import { ProductMapper } from './products/mapper/product-mapper'
 import { CategoryMapper } from './category/mapper/category-mapper'
 import { ProductsModule } from './products/products.module'
 import { SuppliersModule } from './suppliers/suppliers.module'
+import { SupplierMapper } from './suppliers/mappers/supplier-mapper'
 
 @Module({
   imports: [
@@ -23,6 +24,6 @@ import { SuppliersModule } from './suppliers/suppliers.module'
     }),
     SuppliersModule,
   ],
-  providers: [ProductMapper, CategoryMapper],
+  providers: [ProductMapper, CategoryMapper, SupplierMapper],
 })
 export class AppModule {}

@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { ProductMapper } from './products/mapper/product-mapper'
 import { CategoryMapper } from './category/mapper/category-mapper'
 import { ProductsModule } from './products/products.module'
+import { SuppliersModule } from './suppliers/suppliers.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ProductsModule } from './products/products.module'
       autoLoadEntities: true,
       entities: [`${__dirname}/**/*.entity{.ts,.js}`],
     }),
+    SuppliersModule,
   ],
   providers: [ProductMapper, CategoryMapper],
 })

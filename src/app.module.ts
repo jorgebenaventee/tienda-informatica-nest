@@ -25,5 +25,4 @@ import { SuppliersModule } from './suppliers/suppliers.module'
   ],
   providers: [ProductMapper, CategoryMapper],
 })
-export class AppModule {
-}
+export class AppModule {}

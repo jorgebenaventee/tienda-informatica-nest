@@ -1,2 +1,1 @@
-export class CreateSupplierDto {
-}
+export class CreateSupplierDto {}

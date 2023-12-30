@@ -1,7 +1,7 @@
 export class ResponseSupplierDto {
-  id: number
+  id: string
   name: string
-  contact: string
+  contact: number
   address: string
   hired_at: Date
   category: string

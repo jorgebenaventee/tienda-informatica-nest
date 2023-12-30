@@ -17,7 +17,8 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
-  ) {}
+  ) {
+  }
 
   async findAll() {
     this.logger.log('Searching for all products')

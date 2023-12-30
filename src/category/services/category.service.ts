@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common'
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { CreateCategoryDto } from '../dto/create-category.dto'
 import { UpdateCategoryDto } from '../dto/update-category.dto'
 import { Repository } from 'typeorm'
@@ -19,7 +14,8 @@ export class CategoryService {
     private readonly categoryMapper: CategoryMapper,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
-  ) {}
+  ) {
+  }
 
   async findAll() {
     this.logger.log('Searching all categories')

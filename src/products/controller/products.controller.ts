@@ -1,21 +1,12 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  ParseUUIDPipe,
-  Post,
-  Put,
-} from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common'
 import { ProductsService } from '../services/products.service'
 import { CreateProductDto } from '../dto/create-product.dto'
 import { UpdateProductDto } from '../dto/update-product.dto'
 
 @Controller('api/products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) {
+  }
 
   @Get()
   findAll() {

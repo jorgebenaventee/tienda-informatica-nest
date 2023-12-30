@@ -14,4 +14,5 @@ import { ProductMapper } from './mapper/product-mapper'
     TypeOrmModule.forFeature([Category]),
   ],
 })
-export class ProductsModule {}
+export class ProductsModule {
+}

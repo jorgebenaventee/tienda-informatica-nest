@@ -1,10 +1,4 @@
-import {
-  IsBoolean,
-  IsDate,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator'
+import { IsBoolean, IsDate, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class ResponseCategoryDto {
   id: string

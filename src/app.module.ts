@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { ProductMapper } from './products/mapper/product-mapper'
 import { CategoryMapper } from './category/mapper/category-mapper'
 import { ProductsModule } from './products/products.module'
-import { SuppliersModule } from './suppliers/suppliers.module';
+import { SuppliersModule } from './suppliers/suppliers.module'
 
 @Module({
   imports: [
@@ -25,4 +25,5 @@ import { SuppliersModule } from './suppliers/suppliers.module';
   ],
   providers: [ProductMapper, CategoryMapper],
 })
-export class AppModule {}
+export class AppModule {
+}

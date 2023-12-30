@@ -10,4 +10,5 @@ import { Category } from './entities/category.entity'
   providers: [CategoryService, CategoryMapper],
   imports: [TypeOrmModule.forFeature([Category])],
 })
-export class CategoryModule {}
+export class CategoryModule {
+}

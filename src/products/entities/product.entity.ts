@@ -16,6 +16,7 @@ import {
 } from 'class-validator'
 import { v4 as uuidv4 } from 'uuid'
 import { Category } from '../../category/entities/category.entity'
+import { Supplier } from '../../suppliers/entities/supplier.entity'
 
 @Entity('products')
 export class Product {
@@ -66,4 +67,7 @@ export class Product {
   @ManyToOne(() => Category, (category) => category.products)
   @JoinColumn({ name: 'category_id' })
   category: Category
+  @ManyToOne(() => Supplier, (supplier) => supplier.products)
+  @JoinColumn({ name: 'supplier_id' })
+  supplier: Supplier
 }

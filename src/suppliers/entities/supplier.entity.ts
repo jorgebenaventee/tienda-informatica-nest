@@ -4,6 +4,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryColumn,
 } from 'typeorm'
 import {
@@ -17,6 +18,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import { Transform } from 'class-transformer'
 import { Category } from '../../category/entities/category.entity'
+import { Product } from '../../products/entities/product.entity'
 
 @Entity('suppliers')
 export class Supplier {
@@ -51,4 +53,6 @@ export class Supplier {
   @IsBoolean({ message: 'Is deleted must be a boolean' })
   @Column({ type: 'boolean', default: false, name: 'is_deleted' })
   is_deleted: boolean
+  @OneToMany(() => Product, (product) => product.supplier)
+  products: Product[]
 }

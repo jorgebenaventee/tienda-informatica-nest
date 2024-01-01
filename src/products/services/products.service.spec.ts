@@ -9,11 +9,13 @@ import { ResponseProductDto } from '../dto/response-product.dto'
 import { NotFoundException } from '@nestjs/common'
 import { CreateProductDto } from '../dto/create-product.dto'
 import { UpdateProductDto } from '../dto/update-product.dto'
+import { Supplier } from '../../suppliers/entities/supplier.entity'
 
 describe('ProductsService', () => {
   let service: ProductsService
   let productsRepository: Repository<Product>
   let categoryRepository: Repository<Category>
+  let supplierRepository: Repository<Supplier>
   let mapper: ProductMapper
 
   const mapperMock = {
@@ -27,6 +29,7 @@ describe('ProductsService', () => {
         ProductsService,
         { provide: getRepositoryToken(Product), useClass: Repository },
         { provide: getRepositoryToken(Category), useClass: Repository },
+        { provide: getRepositoryToken(Supplier), useClass: Repository },
         { provide: ProductMapper, useValue: mapperMock },
       ],
     }).compile()
@@ -37,6 +40,9 @@ describe('ProductsService', () => {
     )
     categoryRepository = module.get<Repository<Category>>(
       getRepositoryToken(Category),
+    )
+    supplierRepository = module.get<Repository<Supplier>>(
+      getRepositoryToken(Supplier),
     )
     mapper = module.get<ProductMapper>(ProductMapper)
   })
@@ -93,9 +99,11 @@ describe('ProductsService', () => {
       const createProductDto = new CreateProductDto()
       const category = new Category()
       const product = new Product()
+      const supplier = new Supplier()
       const productResponseDto = new ResponseProductDto()
 
       jest.spyOn(service, 'checkCategory').mockResolvedValue(category)
+      jest.spyOn(service, 'checkSupplier').mockResolvedValue(supplier)
       jest.spyOn(mapper, 'toEntity').mockReturnValue(product)
       jest.spyOn(productsRepository, 'save').mockResolvedValue(product)
       jest.spyOn(mapper, 'toDto').mockReturnValue(productResponseDto)
@@ -205,6 +213,31 @@ describe('ProductsService', () => {
         .spyOn(categoryRepository, 'createQueryBuilder')
         .mockReturnValue(mockQuery as any)
       await expect(service.checkCategory('PC')).rejects.toThrow(
+        NotFoundException,
+      )
+    })
+  })
+  describe('checkSupplier', () => {
+    it('should return a supplier', async () => {
+      const supplier = new Supplier()
+      const mockQuery = {
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(supplier),
+      }
+      jest
+        .spyOn(supplierRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQuery as any)
+      expect(await service.checkSupplier('uuid')).toEqual(supplier)
+    })
+    it('should throw a NotFoundException', async () => {
+      const mockQuery = {
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(undefined),
+      }
+      jest
+        .spyOn(supplierRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQuery as any)
+      await expect(service.checkSupplier('uuid')).rejects.toThrow(
         NotFoundException,
       )
     })

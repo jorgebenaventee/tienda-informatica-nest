@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Product } from '../entities/product.entity'
 import { Repository } from 'typeorm'
 import { Category } from '../../category/entities/category.entity'
+import { Supplier } from '../../suppliers/entities/supplier.entity'
 
 @Injectable()
 export class ProductsService {
@@ -17,6 +18,8 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
+    @InjectRepository(Supplier)
+    private readonly supplierRepository: Repository<Supplier>,
   ) {}
 
   async findAll() {
@@ -24,6 +27,7 @@ export class ProductsService {
     const products = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.supplier', 'supplier')
       .where('product.isDeleted = :isDeleted', { isDeleted: false })
       .orderBy('product.id', 'ASC')
       .getMany()
@@ -49,7 +53,14 @@ export class ProductsService {
     const category: Category = await this.checkCategory(
       createProductDto.category,
     )
-    const product = this.productMapper.toEntity(createProductDto, category)
+    const supplier: Supplier = await this.checkSupplier(
+      createProductDto.supplier,
+    )
+    const product = this.productMapper.toEntity(
+      createProductDto,
+      category,
+      supplier,
+    )
     const productCreated = await this.productRepository.save(product)
     return this.productMapper.toDto(productCreated)
   }
@@ -76,6 +87,7 @@ export class ProductsService {
       ...product,
       ...updateProductDto,
       category,
+      supplier: product.supplier,
     })
     return this.productMapper.toDto(productUpdated)
   }
@@ -125,5 +137,20 @@ export class ProductsService {
       )
     }
     return category
+  }
+
+  async checkSupplier(idSupplier: string) {
+    this.logger.log(`Searching for supplier with id: ${idSupplier}`)
+    const supplier = await this.supplierRepository
+      .createQueryBuilder('supplier')
+      .where('supplier.id = :id and' + ' supplier.is_deleted = :is_deleted', {
+        id: idSupplier,
+        is_deleted: false,
+      })
+      .getOne()
+    if (!supplier) {
+      throw new NotFoundException(`Supplier with id: ${idSupplier} not found`)
+    }
+    return supplier
   }
 }

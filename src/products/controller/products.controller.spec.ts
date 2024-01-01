@@ -71,6 +71,7 @@ describe('ProductsController', () => {
         description: 'description',
         isDeleted: false,
         category: 'category',
+        supplier: 'supplier',
       }
       const result: ResponseProductDto = new ResponseProductDto()
       jest.spyOn(service, 'create').mockResolvedValue(result)

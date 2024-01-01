@@ -36,4 +36,5 @@ export class ResponseProductDto {
   @IsOptional()
   isDeleted?: boolean
   category: string
+  supplier: string
 }

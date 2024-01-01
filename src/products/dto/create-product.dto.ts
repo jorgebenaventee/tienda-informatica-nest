@@ -4,7 +4,9 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  IsUUID,
 } from 'class-validator'
+import { Transform } from 'class-transformer'
 
 export class CreateProductDto {
   @IsNotEmpty({ message: 'Name cannot be empty' })
@@ -28,5 +30,12 @@ export class CreateProductDto {
   @IsBoolean()
   @IsOptional()
   isDeleted?: boolean
+  @Transform(({ value }) => value.trim())
+  @IsNotEmpty({ message: 'Category cannot be empty' })
+  @IsString({ message: 'Category must be a string' })
   category: string
+  @Transform(({ value }) => value.trim())
+  @IsNotEmpty({ message: 'Supplier cannot be empty' })
+  @IsUUID('4', { message: 'The id must be a UUID' })
+  supplier: string
 }

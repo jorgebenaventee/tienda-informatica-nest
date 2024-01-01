@@ -15,6 +15,7 @@ import {
   IsUUID,
 } from 'class-validator'
 import { v4 as uuidv4 } from 'uuid'
+import { Supplier } from '../../suppliers/entities/supplier.entity'
 
 @Entity('categories')
 export class Category {
@@ -46,4 +47,7 @@ export class Category {
 
   @OneToMany(() => Product, (products) => products.category)
   products: Product[]
+
+  @OneToMany(() => Supplier, (supplier) => supplier.category)
+  suppliers: Supplier[]
 }

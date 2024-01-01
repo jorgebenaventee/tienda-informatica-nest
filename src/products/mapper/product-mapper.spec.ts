@@ -15,6 +15,19 @@ describe('ProductMapper', () => {
     updatedAt: new Date(),
     isActive: true,
     products: [],
+    suppliers: [],
+  }
+  const supplier = {
+    id: 'uuid',
+    name: 'supplier',
+    contact: 1,
+    address: 'address',
+    hired_at: new Date(),
+    category: category,
+    is_deleted: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    products: [],
   }
   const product: Product = {
     id: 'uuid',
@@ -28,6 +41,7 @@ describe('ProductMapper', () => {
     category: category,
     createdAt: new Date(),
     updatedAt: new Date(),
+    supplier: supplier,
   }
   const createProductDto: CreateProductDto = {
     name: 'Computer',
@@ -38,7 +52,9 @@ describe('ProductMapper', () => {
     description: 'description',
     isDeleted: false,
     category: category.name,
+    supplier: supplier.id,
   }
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [ProductMapper],
@@ -51,7 +67,7 @@ describe('ProductMapper', () => {
     expect(mapper).toBeDefined()
   })
   it('should map dto to entity', () => {
-    const actualProduct = mapper.toEntity(createProductDto, category)
+    const actualProduct = mapper.toEntity(createProductDto, category, supplier)
     expect(actualProduct).toBeInstanceOf(Product)
   })
   it('should map entity to dto', () => {

@@ -15,6 +15,7 @@ describe('Mappers', () => {
     updatedAt: new Date(),
     isActive: true,
     products: [],
+    suppliers: [],
   }
 
   const createSupplierDto: CreateSupplierDto = {
@@ -36,6 +37,7 @@ describe('Mappers', () => {
     is_deleted: false,
     createdAt: new Date(),
     updatedAt: new Date(),
+    products: [],
   }
 
   beforeEach(async () => {

@@ -110,6 +110,41 @@ describe('ProductsService', () => {
 
       expect(await service.create(createProductDto)).toEqual(productResponseDto)
     })
+    it('should throw a BadRequest because of empty name', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.name = ''
+      await expect(service.create(createProductDto)).rejects.toThrow(TypeError)
+    })
+    it('should throw a BadRequest because of empty price', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.price = undefined
+      await expect(service.create(createProductDto)).rejects.toThrow(TypeError)
+    })
+    it('should throw a BadRequest because of empty category', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.category = ''
+      await expect(service.create(createProductDto)).rejects.toThrow(TypeError)
+    })
+    it('should throw a BadRequest because of empty supplier', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.supplier = ''
+      await expect(service.create(createProductDto)).rejects.toThrow(TypeError)
+    })
+    it('should throw a BadRequest because of empty weight', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.weight = undefined
+      await expect(service.create(createProductDto)).rejects.toThrow(TypeError)
+    })
+    it('should throw a BadRequest because of empty stock', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.stock = undefined
+      await expect(service.create(createProductDto)).rejects.toThrow(TypeError)
+    })
+    it('should throw a BadRequest because of empty description', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.description = ''
+      await expect(service.create(createProductDto)).rejects.toThrow(TypeError)
+    })
   })
   describe('update', () => {
     it('should update a product', async () => {
@@ -131,6 +166,55 @@ describe('ProductsService', () => {
 
       expect(await service.update('uuid', updateProductDto)).toEqual(
         productResponseDto,
+      )
+    })
+    it('should throw a BadRequest because of empty name', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.name = ''
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow(
+        TypeError,
+      )
+    })
+    it('should throw a BadRequest because of empty price', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.price = undefined
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow(
+        TypeError,
+      )
+    })
+    it('should throw a BadRequest because of empty category', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.category = ''
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow(
+        TypeError,
+      )
+    })
+    it('should throw a BadRequest because of empty supplier', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.supplier = ''
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow(
+        TypeError,
+      )
+    })
+    it('should throw a BadRequest because of empty weight', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.weight = undefined
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow(
+        TypeError,
+      )
+    })
+    it('should throw a BadRequest because of empty stock', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.stock = undefined
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow(
+        TypeError,
+      )
+    })
+    it('should throw a BadRequest because of empty description', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.description = ''
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow(
+        TypeError,
       )
     })
   })

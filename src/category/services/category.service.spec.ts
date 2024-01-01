@@ -76,6 +76,11 @@ describe('CategoryService', () => {
       expect(repository.save).toHaveBeenCalled()
       expect(mapper.toEntity).toHaveBeenCalled()
     })
+    it('should throw a BadRequestException because of empty  name', async () => {
+      const createCategory = new CreateCategoryDto()
+      createCategory.name = ''
+      await expect(service.create(createCategory)).rejects.toThrow(TypeError)
+    })
   })
   describe('update', () => {
     it('should update a category', async () => {
@@ -86,17 +91,21 @@ describe('CategoryService', () => {
         where: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(category),
       }
-      const mockUpdateCategoryDto = new UpdateCategoryDto()
+      const updateCategory = new UpdateCategoryDto()
 
       jest
         .spyOn(repository, 'createQueryBuilder')
         .mockReturnValue(mockQuery as any)
-      jest.spyOn(mapper, 'toEntity').mockReturnValue(category)
+      jest.spyOn(repository, 'findOneBy').mockResolvedValue(category)
       jest.spyOn(repository, 'save').mockResolvedValue(category)
-      jest.spyOn(service, 'categoryExists').mockResolvedValue(null)
 
-      const result = await service.update('uuid', mockUpdateCategoryDto)
-      expect(result).toBe(category)
+      const result = await service.update('uuid', updateCategory)
+      expect(result).toEqual(category)
+    })
+    it('should throw a BadRequestException because of empty name', async () => {
+      const createCategory = new CreateCategoryDto()
+      createCategory.name = ''
+      await expect(service.create(createCategory)).rejects.toThrow(TypeError)
     })
   })
   describe('remove', () => {

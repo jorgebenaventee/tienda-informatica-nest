@@ -44,14 +44,22 @@ export class CategoryService {
 
   async update(id: string, updateCategoryDto: UpdateCategoryDto) {
     this.logger.log(`Updating category with id ${id}`)
-    const category = this.categoryMapper.toEntity(updateCategoryDto)
-    const categoryUpdated = await this.categoryExists(category.name)
-    if (!categoryUpdated) {
-      return await this.categoryRepository.save({
-        ...category,
-        id,
-      })
+    const categoryToUpdate = await this.findOne(id)
+    if (updateCategoryDto.name) {
+      const category = await this.categoryRepository
+        .createQueryBuilder('category')
+        .where('LOWER(name) = LOWER(:name)', { name: updateCategoryDto.name })
+        .getOne()
+      if (category && category.id !== categoryToUpdate.id) {
+        throw new BadRequestException(
+          `Category ${updateCategoryDto.name} already exists`,
+        )
+      }
     }
+    return await this.categoryRepository.save({
+      ...categoryToUpdate,
+      ...updateCategoryDto,
+    })
   }
 
   async remove(id: string) {
@@ -75,19 +83,19 @@ export class CategoryService {
     }
   }
 
-  async categoryExists(name: string): Promise<Category> {
+  async categoryExists(nameCategory: string): Promise<Category> {
     const category = await this.categoryRepository
       .createQueryBuilder('category')
-      .where('LOWER(name) = LOWER(:name)', { name })
+      .where('LOWER(name) = LOWER(:name)', { name: nameCategory })
       .getOne()
     if (!category) {
       const newCategory = new Category()
-      newCategory.name = name
+      newCategory.name = nameCategory
       newCategory.isActive = true
       return await this.categoryRepository.save(newCategory)
     } else if (category) {
       if (category.isActive === true) {
-        throw new BadRequestException(`Category ${name} already exists`)
+        throw new BadRequestException(`Category ${nameCategory} already exists`)
       } else if (category.isActive === false) {
         category.isActive = true
         return await this.categoryRepository.save(category)

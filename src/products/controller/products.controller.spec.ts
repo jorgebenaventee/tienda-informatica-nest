@@ -15,6 +15,7 @@ describe('ProductsController', () => {
     findOne: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    remove: jest.fn(),
     removeSoft: jest.fn(),
   }
 
@@ -96,7 +97,7 @@ describe('ProductsController', () => {
       expect(result).toBeInstanceOf(ResponseProductDto)
     })
   })
-  describe('remove', () => {
+  describe('removeSoft', () => {
     it('should delete a product', async () => {
       const id = 'uuid'
       const result = new ResponseProductDto()

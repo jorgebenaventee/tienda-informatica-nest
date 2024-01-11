@@ -6,19 +6,23 @@ import { CategoryMapper } from './category/mapper/category-mapper'
 import { ProductsModule } from './products/products.module'
 import { SuppliersModule } from './suppliers/suppliers.module'
 import { SupplierMapper } from './suppliers/mappers/supplier-mapper'
+import { StorageModule } from './rest/storage/storage.module'
+import { ConfigModule } from '@nestjs/config'
 
 @Module({
   imports: [
     ProductsModule,
+    StorageModule,
     CategoryModule,
+    ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
-      port: 5432,
-      username: 'admin',
-      password: 'admin1234',
-      database: 'clowns',
-      synchronize: true,
+      port: parseInt(process.env.POSTGRES_PORT) || 5432,
+      username: process.env.DATABASE_USER,
+      password: process.env.DATABASE_PASSWORD,
+      database: process.env.POSTGRES_DATABASE,
+      synchronize: process.env.NODE_ENV === 'dev',
       autoLoadEntities: true,
       entities: [`${__dirname}/**/*.entity{.ts,.js}`],
     }),

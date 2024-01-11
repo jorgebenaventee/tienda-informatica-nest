@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common'
 import { CreateProductDto } from '../dto/create-product.dto'
 import { UpdateProductDto } from '../dto/update-product.dto'
 import { ProductMapper } from '../mapper/product-mapper'
@@ -6,12 +11,14 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Product } from '../entities/product.entity'
 import { Repository } from 'typeorm'
 import { Category } from '../../category/entities/category.entity'
+import { StorageService } from '../../rest/storage/services/storage.service'
 
 @Injectable()
 export class ProductsService {
   private logger = new Logger('ProductsService ')
 
   constructor(
+    private readonly storageService: StorageService,
     private readonly productMapper: ProductMapper,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
@@ -90,7 +97,7 @@ export class ProductsService {
     if (!products) {
       throw new NotFoundException(`Product with id: ${id} not found`)
     }
-    await this.productRepository.delete(products)
+    await this.productRepository.remove(products)
   }
 
   async removeSoft(id: string) {
@@ -108,6 +115,30 @@ export class ProductsService {
       isDeleted: true,
     })
     return this.productMapper.toDto(productDeleted)
+  }
+
+  async updateImage(id: string, file: Express.Multer.File) {
+    this.logger.log(`Updating funko image with id ${id}`)
+    const productToUpdate = await this.productRepository.findOneBy({ id })
+    if (!productToUpdate) {
+      throw new NotFoundException(`Product #${id} not found`)
+    }
+    if (!file) {
+      throw new BadRequestException('File is required')
+    }
+    if (productToUpdate.image !== Product.IMAGE_DEFAULT) {
+      this.logger.log(`Deleting old image ${productToUpdate.image}`)
+      try {
+        this.storageService.removeFile(productToUpdate.image)
+      } catch (error) {
+        this.logger.error(error)
+      }
+    }
+
+    productToUpdate.image = file.filename
+    const productUpdated = await this.productRepository.save(productToUpdate)
+    const dto = this.productMapper.toDto(productUpdated)
+    return dto
   }
 
   async checkCategory(nameCategory: string) {

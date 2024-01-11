@@ -9,16 +9,23 @@ import { ResponseProductDto } from '../dto/response-product.dto'
 import { NotFoundException } from '@nestjs/common'
 import { CreateProductDto } from '../dto/create-product.dto'
 import { UpdateProductDto } from '../dto/update-product.dto'
+import { StorageService } from '../../rest/storage/services/storage.service'
 
 describe('ProductsService', () => {
   let service: ProductsService
   let productsRepository: Repository<Product>
   let categoryRepository: Repository<Category>
   let mapper: ProductMapper
+  let storageService: StorageService
 
   const mapperMock = {
     toDto: jest.fn(),
     toEntity: jest.fn(),
+  }
+
+  const storageServiceMock = {
+    removeFile: jest.fn(),
+    getFileNameWithouUrl: jest.fn(),
   }
 
   beforeEach(async () => {
@@ -28,6 +35,7 @@ describe('ProductsService', () => {
         { provide: getRepositoryToken(Product), useClass: Repository },
         { provide: getRepositoryToken(Category), useClass: Repository },
         { provide: ProductMapper, useValue: mapperMock },
+        { provide: StorageService, useValue: storageServiceMock },
       ],
     }).compile()
 
@@ -39,6 +47,7 @@ describe('ProductsService', () => {
       getRepositoryToken(Category),
     )
     mapper = module.get<ProductMapper>(ProductMapper)
+    storageService = module.get<StorageService>(StorageService)
   })
 
   it('should be defined', () => {
@@ -137,7 +146,7 @@ describe('ProductsService', () => {
       jest
         .spyOn(productsRepository, 'createQueryBuilder')
         .mockReturnValue(mockQuery as any)
-      jest.spyOn(productsRepository, 'delete').mockResolvedValue(undefined)
+      jest.spyOn(productsRepository, 'remove').mockResolvedValue(undefined)
 
       expect(await service.remove('uuid')).toEqual(undefined)
     })
@@ -181,6 +190,36 @@ describe('ProductsService', () => {
         .mockReturnValue(mockQuery as any)
       await expect(service.removeSoft('uuid')).rejects.toThrow(
         NotFoundException,
+      )
+    })
+  })
+  describe('updateImage', () => {
+    it('should update a product image', async () => {
+      const mockFunko = new Product()
+      const mockResponseFunkoDto = new ResponseProductDto()
+      const mockFile: Express.Multer.File = {
+        fieldname: 'image',
+        originalname: 'image',
+        encoding: '7bit',
+        mimetype: 'image/jpeg',
+        destination: 'destination',
+        filename: 'filename',
+        path: 'path',
+        size: 1,
+        stream: null,
+        buffer: null,
+      }
+
+      jest.spyOn(productsRepository, 'findOneBy').mockResolvedValue(mockFunko)
+
+      jest.spyOn(storageService, 'removeFile').mockImplementation()
+
+      jest.spyOn(productsRepository, 'save').mockResolvedValue(mockFunko)
+
+      jest.spyOn(mapper, 'toDto').mockReturnValue(mockResponseFunkoDto)
+
+      expect(await service.updateImage('uuid', mockFile)).toEqual(
+        mockResponseFunkoDto,
       )
     })
   })

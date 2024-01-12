@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -11,7 +12,17 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Product } from '../entities/product.entity'
 import { Repository } from 'typeorm'
 import { Category } from '../../category/entities/category.entity'
-import { StorageService } from '../../rest/storage/services/storage.service'
+import { StorageService } from '../../storage/services/storage.service'
+import { Cache } from 'cache-manager'
+import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import {
+  FilterOperator,
+  FilterSuffix,
+  paginate,
+  PaginateQuery,
+} from 'nestjs-paginate'
+import { hash } from 'typeorm/util/StringUtils'
+import { ResponseProductDto } from '../dto/response-product.dto'
 
 @Injectable()
 export class ProductsService {
@@ -24,21 +35,57 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  async findAll() {
+  async findAll(query: PaginateQuery) {
     this.logger.log('Searching for all products')
-    const products = await this.productRepository
+    const cache: ResponseProductDto[] = await this.cacheManager.get(
+      `all_products_page_${hash(JSON.stringify(query))}`,
+    )
+    if (cache) {
+      this.logger.log('Products found in cache')
+      return cache
+    }
+    const products = this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
-      .where('product.isDeleted = :isDeleted', { isDeleted: false })
-      .orderBy('product.id', 'ASC')
-      .getMany()
-    return products.map((product) => this.productMapper.toDto(product))
+
+    const page = await paginate(query, products, {
+      sortableColumns: ['name', 'weight', 'price', 'stock'],
+      defaultSortBy: [['id', 'ASC']],
+      searchableColumns: ['name', 'weight', 'price', 'stock'],
+      filterableColumns: {
+        name: [FilterOperator.EQ, FilterSuffix.NOT],
+        price: [FilterOperator.EQ, FilterSuffix.NOT],
+        stock: [FilterOperator.EQ, FilterSuffix.NOT],
+        isDeleted: [FilterOperator.EQ, FilterSuffix.NOT],
+      },
+    })
+    const dto = {
+      data: (page.data ?? []).map((product) =>
+        this.productMapper.toDto(product),
+      ),
+      meta: page.meta,
+      links: page.links,
+    }
+    await this.cacheManager.set(
+      `all_products_page_${hash(JSON.stringify(query))}`,
+      dto,
+      60,
+    )
+    return dto
   }
 
   async findOne(id: string) {
     this.logger.log(`Searching for product with id: ${id}`)
+    const cache: ResponseProductDto = await this.cacheManager.get(
+      `product_${id}`,
+    )
+    if (cache) {
+      this.logger.log('Product found in cache')
+      return cache
+    }
     const products = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
@@ -47,7 +94,9 @@ export class ProductsService {
     if (!products) {
       throw new NotFoundException(`Product with id: ${id} not found`)
     } else {
-      return this.productMapper.toDto(products)
+      const dto = this.productMapper.toDto(products)
+      await this.cacheManager.set(`product_${id}`, dto, 60)
+      return dto
     }
   }
 
@@ -58,7 +107,9 @@ export class ProductsService {
     )
     const product = this.productMapper.toEntity(createProductDto, category)
     const productCreated = await this.productRepository.save(product)
-    return this.productMapper.toDto(productCreated)
+    const dto = this.productMapper.toDto(productCreated)
+    await this.invalidateCacheKey('all_products_page_')
+    return dto
   }
 
   async update(id: string, updateProductDto: UpdateProductDto) {
@@ -84,7 +135,10 @@ export class ProductsService {
       ...updateProductDto,
       category,
     })
-    return this.productMapper.toDto(productUpdated)
+    const dto = this.productMapper.toDto(productUpdated)
+    await this.invalidateCacheKey('all_products_page_')
+    await this.invalidateCacheKey(`product_${id}`)
+    return dto
   }
 
   async remove(id: string) {
@@ -97,7 +151,19 @@ export class ProductsService {
     if (!products) {
       throw new NotFoundException(`Product with id: ${id} not found`)
     }
-    await this.productRepository.remove(products)
+    if (products.image !== Product.IMAGE_DEFAULT) {
+      try {
+        this.storageService.removeFile(products.image)
+      } catch (error) {
+        this.logger.error(error)
+      }
+    }
+
+    const productDeleted = await this.productRepository.remove(products)
+    const dto = this.productMapper.toDto(productDeleted)
+    await this.invalidateCacheKey('all_products_page_')
+    await this.invalidateCacheKey(`product_${id}`)
+    return dto
   }
 
   async removeSoft(id: string) {
@@ -114,11 +180,14 @@ export class ProductsService {
       ...products,
       isDeleted: true,
     })
-    return this.productMapper.toDto(productDeleted)
+    const dto = this.productMapper.toDto(productDeleted)
+    await this.invalidateCacheKey('all_products_page_')
+    await this.invalidateCacheKey(`product_${id}`)
+    return dto
   }
 
   async updateImage(id: string, file: Express.Multer.File) {
-    this.logger.log(`Updating funko image with id ${id}`)
+    this.logger.log(`Updating product image with id ${id}`)
     const productToUpdate = await this.productRepository.findOneBy({ id })
     if (!productToUpdate) {
       throw new NotFoundException(`Product #${id} not found`)
@@ -138,6 +207,8 @@ export class ProductsService {
     productToUpdate.image = file.filename
     const productUpdated = await this.productRepository.save(productToUpdate)
     const dto = this.productMapper.toDto(productUpdated)
+    await this.invalidateCacheKey('all_products_page_')
+    await this.invalidateCacheKey(`product_${id}`)
     return dto
   }
 
@@ -156,5 +227,12 @@ export class ProductsService {
       )
     }
     return category
+  }
+
+  async invalidateCacheKey(keyPattern: string): Promise<void> {
+    const cacheKeys = await this.cacheManager.store.keys()
+    const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
+    const promises = keysToDelete.map((key) => this.cacheManager.del(key))
+    await Promise.all(promises)
   }
 }

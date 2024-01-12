@@ -8,21 +8,29 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  UseInterceptors,
 } from '@nestjs/common'
 import { CategoryService } from '../services/category.service'
 import { CreateCategoryDto } from '../dto/create-category.dto'
 import { UpdateCategoryDto } from '../dto/update-category.dto'
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager'
+import { Paginate, PaginateQuery } from 'nestjs-paginate'
 
+@UseInterceptors(CacheInterceptor)
 @Controller('category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Get()
-  async findAll() {
-    return await this.categoryService.findAll()
+  @CacheKey('all_categories')
+  @CacheTTL(60)
+  async findAll(@Paginate() query: PaginateQuery) {
+    return await this.categoryService.findAll(query)
   }
 
   @Get(':id')
+  @CacheKey('one_category')
+  @CacheTTL(60)
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return await this.categoryService.findOne(id)
   }

@@ -5,7 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { Category } from '../category/entities/category.entity'
 import { Product } from './entities/product.entity'
 import { ProductMapper } from './mapper/product-mapper'
-import { StorageModule } from '../rest/storage/storage.module'
+import { StorageModule } from '../storage/storage.module'
+import { CacheModule } from '@nestjs/cache-manager'
 
 @Module({
   controllers: [ProductsController],
@@ -14,6 +15,7 @@ import { StorageModule } from '../rest/storage/storage.module'
     TypeOrmModule.forFeature([Product]),
     TypeOrmModule.forFeature([Category]),
     StorageModule,
+    CacheModule.register(),
   ],
 })
 export class ProductsModule {}

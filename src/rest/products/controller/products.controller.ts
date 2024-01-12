@@ -6,7 +6,6 @@ import {
   Get,
   HttpCode,
   Param,
-  ParseIntPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -23,17 +22,24 @@ import { diskStorage } from 'multer'
 import { extname, parse } from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { ProductExistsGuard } from '../guards/product-exists-guard'
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager'
+import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate'
 
 @Controller('products')
+@UseInterceptors(CacheInterceptor)
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  findAll() {
-    return this.productsService.findAll()
+  @CacheKey('all_products')
+  @CacheTTL(60)
+  findAll(@Paginate() query: PaginateQuery) {
+    return this.productsService.findAll(query)
   }
 
   @Get(':id')
+  @CacheKey('productById')
+  @CacheTTL(60)
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.productsService.findOne(id)
   }

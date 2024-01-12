@@ -26,7 +26,7 @@ describe('Category', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       isActive: true,
-      funkos: [],
+      products: [],
     }
     const actualCategory = mapper.toEntity(createCategoryDto)
     expect(actualCategory.name).toEqual(category.name)
@@ -42,7 +42,7 @@ describe('Category', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       isActive: false,
-      funkos: [],
+      products: [],
     }
     const actualCategory = mapper.toEntity(updateCategoryDto)
     expect(actualCategory.name).toEqual(category.name)

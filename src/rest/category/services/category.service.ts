@@ -134,6 +134,23 @@ export class CategoryService {
     }
   }
 
+  async checkCategory(nameCategory: string) {
+    this.logger.log(`Searching for category with name: ${nameCategory}`)
+    const category = await this.categoryRepository
+      .createQueryBuilder('category')
+      .where('category.name = :name and' + ' category.isActive = :isActive', {
+        name: nameCategory,
+        isActive: true,
+      })
+      .getOne()
+    if (!category) {
+      throw new NotFoundException(
+        `Category with name: ${nameCategory} not found`,
+      )
+    }
+    return category
+  }
+
   async categoryExists(name: string): Promise<Category> {
     const cache: Category = await this.cacheManager.get(`category_name_${name}`)
     if (cache) {

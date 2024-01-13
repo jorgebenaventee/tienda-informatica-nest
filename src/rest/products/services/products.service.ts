@@ -24,6 +24,7 @@ import {
 import { hash } from 'typeorm/util/StringUtils'
 import { ResponseProductDto } from '../dto/response-product.dto'
 import { SuppliersService } from '../../suppliers/services/suppliers.service'
+import { CategoryService } from '../../category/services/category.service'
 
 @Injectable()
 export class ProductsService {
@@ -34,8 +35,7 @@ export class ProductsService {
     private readonly productMapper: ProductMapper,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
-    @InjectRepository(Category)
-    private readonly categoryRepository: Repository<Category>,
+    private readonly categoryService: CategoryService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly supplierService: SuppliersService,
   ) {}
@@ -106,7 +106,7 @@ export class ProductsService {
 
   async create(createProductDto: CreateProductDto) {
     this.logger.log('Product created')
-    const category: Category = await this.checkCategory(
+    const category: Category = await this.categoryService.checkCategory(
       createProductDto.category,
     )
     const supplier = await this.supplierService.checkSupplier(
@@ -125,7 +125,7 @@ export class ProductsService {
 
   async update(id: string, updateProductDto: UpdateProductDto) {
     this.logger.log(`Updating product with id: ${id}`)
-    const category: Category = await this.checkCategory(
+    const category: Category = await this.categoryService.checkCategory(
       updateProductDto.category,
     )
     const supplier = await this.supplierService.checkSupplier(
@@ -228,23 +228,6 @@ export class ProductsService {
     await this.invalidateCacheKey('all_products_page_')
     await this.invalidateCacheKey(`product_${id}`)
     return dto
-  }
-
-  async checkCategory(nameCategory: string) {
-    this.logger.log(`Searching for category with name: ${nameCategory}`)
-    const category = await this.categoryRepository
-      .createQueryBuilder('category')
-      .where('category.name = :name and' + ' category.isActive = :isActive', {
-        name: nameCategory,
-        isActive: true,
-      })
-      .getOne()
-    if (!category) {
-      throw new NotFoundException(
-        `Category with name: ${nameCategory} not found`,
-      )
-    }
-    return category
   }
 
   async invalidateCacheKey(keyPattern: string): Promise<void> {

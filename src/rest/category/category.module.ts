@@ -10,5 +10,6 @@ import { CacheModule } from '@nestjs/cache-manager'
   controllers: [CategoryController],
   providers: [CategoryService, CategoryMapper],
   imports: [TypeOrmModule.forFeature([Category]), CacheModule.register()],
+  exports: [CategoryService],
 })
 export class CategoryModule {}

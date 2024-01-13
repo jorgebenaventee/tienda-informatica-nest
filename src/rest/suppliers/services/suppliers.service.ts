@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { CreateSupplierDto } from '../dto/create-supplier.dto'
 import { UpdateSupplierDto } from '../dto/update-supplier.dto'
 import { SupplierMapper } from '../mappers/supplier-mapper'
@@ -6,6 +6,17 @@ import { Supplier } from '../entities/supplier.entity'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Category } from '../../category/entities/category.entity'
+import { Cache } from 'cache-manager'
+import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import { ResponseSupplierDto } from '../dto/response-supplier.dto'
+import {
+  FilterOperator,
+  FilterSuffix,
+  paginate,
+  PaginateQuery,
+} from 'nestjs-paginate'
+import { hash } from 'typeorm/util/StringUtils'
+import { CategoryService } from '../../category/services/category.service'
 
 @Injectable()
 export class SuppliersService {
@@ -15,23 +26,69 @@ export class SuppliersService {
     private readonly supplierMapper: SupplierMapper,
     @InjectRepository(Supplier)
     private readonly supplierRepository: Repository<Supplier>,
-    @InjectRepository(Category)
-    private readonly categoryRepository: Repository<Category>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly categoryService: CategoryService,
   ) {}
 
-  async findAll() {
+  async findAll(query: PaginateQuery) {
     this.logger.log('Searching for all suppliers')
-    const suppliers = await this.supplierRepository
+
+    const cache: ResponseSupplierDto[] = await this.cacheManager.get(
+      `all_suppliers_page_${hash(JSON.stringify(query))}`,
+    )
+
+    if (cache) {
+      this.logger.log('Suppliers found in cache')
+      return cache
+    }
+
+    const suppliers = this.supplierRepository
       .createQueryBuilder('supplier')
       .leftJoinAndSelect('supplier.category', 'category')
-      .where('supplier.is_deleted = false')
-      .orderBy('supplier.id', 'ASC')
-      .getMany()
-    return suppliers.map((supplier) => this.supplierMapper.toDto(supplier))
+
+    const page = await paginate(query, suppliers, {
+      sortableColumns: ['name', 'contact', 'address', 'category'],
+      defaultSortBy: [['id', 'ASC']],
+      searchableColumns: ['name', 'contact', 'address', 'category'],
+      filterableColumns: {
+        name: [FilterOperator.CONTAINS, FilterSuffix.NOT, FilterOperator.EQ],
+        contact: [FilterOperator.CONTAINS, FilterSuffix.NOT, FilterOperator.EQ],
+        address: [FilterOperator.CONTAINS, FilterSuffix.NOT, FilterOperator.EQ],
+        category: [
+          FilterOperator.CONTAINS,
+          FilterSuffix.NOT,
+          FilterOperator.EQ,
+        ],
+      },
+    })
+
+    const dto = {
+      data: (page.data ?? []).map((supplier) =>
+        this.supplierMapper.toDto(supplier),
+      ),
+      meta: page.meta,
+      links: page.links,
+    }
+    await this.cacheManager.set(
+      `all_suppliers_page_${hash(JSON.stringify(query))}`,
+      dto,
+      60,
+    )
+    return dto
   }
 
   async findOne(id: string) {
     this.logger.log(`Searching for supplier with id: ${id}`)
+
+    const cache: ResponseSupplierDto = await this.cacheManager.get(
+      `supplier_${id}`,
+    )
+
+    if (cache) {
+      this.logger.log('Supplier found in cache')
+      return cache
+    }
+
     const supplier = await this.supplierRepository
       .createQueryBuilder('supplier')
       .leftJoinAndSelect('supplier.category', 'category')
@@ -40,18 +97,22 @@ export class SuppliersService {
     if (!supplier) {
       throw new NotFoundException(`Supplier with id: ${id} not found`)
     } else {
-      return this.supplierMapper.toDto(supplier)
+      const dto = this.supplierMapper.toDto(supplier)
+      await this.cacheManager.set(`supplier_${id}`, dto, 60)
+      return dto
     }
   }
 
   async create(createSupplierDto: CreateSupplierDto) {
     this.logger.log('Creating supplier')
-    const category: Category = await this.checkCategory(
+    const category: Category = await this.categoryService.checkCategory(
       createSupplierDto.category,
     )
     const supplier = this.supplierMapper.toEntity(createSupplierDto, category)
     const supplierCreated = await this.supplierRepository.save(supplier)
-    return this.supplierMapper.toDto(supplierCreated)
+    const dto = this.supplierMapper.toDto(supplierCreated)
+    await this.invalidateCacheKey('all_suppliers_page_')
+    return dto
   }
 
   async update(id: string, updateSupplierDto: UpdateSupplierDto) {
@@ -64,7 +125,7 @@ export class SuppliersService {
       throw new NotFoundException(`Supplier with id: ${id} not found`)
     }
     if (updateSupplierDto.category) {
-      const category: Category = await this.checkCategory(
+      const category: Category = await this.categoryService.checkCategory(
         updateSupplierDto.category,
       )
       const supplierUpdated = await this.supplierRepository.save({
@@ -79,7 +140,10 @@ export class SuppliersService {
         ...updateSupplierDto,
         category: supplier.category,
       })
-      return this.supplierMapper.toDto(supplierUpdated)
+      const dto = this.supplierMapper.toDto(supplierUpdated)
+      await this.invalidateCacheKey('all_suppliers_page_')
+      await this.invalidateCacheKey(`supplier_${id}`)
+      return dto
     }
   }
 
@@ -96,24 +160,10 @@ export class SuppliersService {
       ...supplier,
       isDeleted: true,
     })
-    return this.supplierMapper.toDto(supplierDeleted)
-  }
-
-  async checkCategory(nameCategory: string) {
-    this.logger.log(`Searching for category with id: ${nameCategory}`)
-    const category = await this.categoryRepository
-      .createQueryBuilder('category')
-      .where('category.name = :name and' + ' category.isActive = :isActive', {
-        name: nameCategory,
-        isActive: true,
-      })
-      .getOne()
-    if (!category) {
-      throw new NotFoundException(
-        `Category with name: ${nameCategory} not found`,
-      )
-    }
-    return category
+    const dto = this.supplierMapper.toDto(supplierDeleted)
+    await this.invalidateCacheKey('all_suppliers_page_')
+    await this.invalidateCacheKey(`supplier_${id}`)
+    return dto
   }
 
   async checkSupplier(idSupplier: string) {
@@ -129,5 +179,12 @@ export class SuppliersService {
       throw new NotFoundException(`Supplier with id: ${idSupplier} not found`)
     }
     return supplier
+  }
+
+  async invalidateCacheKey(keyPattern: string): Promise<void> {
+    const cacheKeys = await this.cacheManager.store.keys()
+    const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
+    const promises = keysToDelete.map((key) => this.cacheManager.del(key))
+    await Promise.all(promises)
   }
 }

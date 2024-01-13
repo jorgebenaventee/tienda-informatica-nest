@@ -13,5 +13,6 @@ import { Category } from '../category/entities/category.entity'
     TypeOrmModule.forFeature([Supplier]),
     TypeOrmModule.forFeature([Category]),
   ],
+  exports: [SuppliersService],
 })
 export class SuppliersModule {}

@@ -23,6 +23,7 @@ import {
 } from 'nestjs-paginate'
 import { hash } from 'typeorm/util/StringUtils'
 import { ResponseProductDto } from '../dto/response-product.dto'
+import { SuppliersService } from '../../suppliers/services/suppliers.service'
 
 @Injectable()
 export class ProductsService {
@@ -36,6 +37,7 @@ export class ProductsService {
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly supplierService: SuppliersService,
   ) {}
 
   async findAll(query: PaginateQuery) {
@@ -50,6 +52,7 @@ export class ProductsService {
     const products = this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.supplier', 'supplier')
 
     const page = await paginate(query, products, {
       sortableColumns: ['name', 'weight', 'price', 'stock'],
@@ -89,6 +92,7 @@ export class ProductsService {
     const products = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.supplier', 'supplier')
       .where('product.id = :id', { id })
       .getOne()
     if (!products) {
@@ -105,7 +109,14 @@ export class ProductsService {
     const category: Category = await this.checkCategory(
       createProductDto.category,
     )
-    const product = this.productMapper.toEntity(createProductDto, category)
+    const supplier = await this.supplierService.checkSupplier(
+      createProductDto.supplier,
+    )
+    const product = this.productMapper.toEntity(
+      createProductDto,
+      category,
+      supplier,
+    )
     const productCreated = await this.productRepository.save(product)
     const dto = this.productMapper.toDto(productCreated)
     await this.invalidateCacheKey('all_products_page_')
@@ -117,9 +128,13 @@ export class ProductsService {
     const category: Category = await this.checkCategory(
       updateProductDto.category,
     )
+    const supplier = await this.supplierService.checkSupplier(
+      updateProductDto.supplier,
+    )
     const product = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.supplier', 'supplier')
       .where('product.id = :id and product.isDeleted = :isDeleted', {
         id,
         isDeleted: false,
@@ -134,6 +149,7 @@ export class ProductsService {
       ...product,
       ...updateProductDto,
       category,
+      supplier,
     })
     const dto = this.productMapper.toDto(productUpdated)
     await this.invalidateCacheKey('all_products_page_')
@@ -146,6 +162,7 @@ export class ProductsService {
     const products = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.supplier', 'supplier')
       .where('product.id = :id', { id })
       .getOne()
     if (!products) {
@@ -171,6 +188,7 @@ export class ProductsService {
     const products = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.supplier', 'supplier')
       .where('product.id = :id', { id })
       .getOne()
     if (!products) {

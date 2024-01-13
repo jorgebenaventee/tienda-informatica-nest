@@ -115,4 +115,19 @@ export class SuppliersService {
     }
     return category
   }
+
+  async checkSupplier(idSupplier: string) {
+    this.logger.log(`Searching for supplier with name: ${idSupplier}`)
+    const supplier = await this.supplierRepository
+      .createQueryBuilder('supplier')
+      .where('supplier.id = :id and' + ' supplier.is_deleted = :is_deleted', {
+        id: idSupplier,
+        is_deleted: false,
+      })
+      .getOne()
+    if (!supplier) {
+      throw new NotFoundException(`Supplier with id: ${idSupplier} not found`)
+    }
+    return supplier
+  }
 }

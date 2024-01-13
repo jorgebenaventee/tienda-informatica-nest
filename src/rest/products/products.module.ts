@@ -7,11 +7,13 @@ import { Product } from './entities/product.entity'
 import { ProductMapper } from './mapper/product-mapper'
 import { StorageModule } from '../storage/storage.module'
 import { CacheModule } from '@nestjs/cache-manager'
+import { SuppliersModule } from '../suppliers/suppliers.module'
 
 @Module({
   controllers: [ProductsController],
   providers: [ProductsService, ProductMapper],
   imports: [
+    SuppliersModule,
     TypeOrmModule.forFeature([Product]),
     TypeOrmModule.forFeature([Category]),
     StorageModule,

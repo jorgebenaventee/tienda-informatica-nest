@@ -23,7 +23,7 @@ import { extname, parse } from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { ProductExistsGuard } from '../guards/product-exists-guard'
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager'
-import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate'
+import { Paginate, PaginateQuery } from 'nestjs-paginate'
 
 @Controller('products')
 @UseInterceptors(CacheInterceptor)

@@ -5,16 +5,27 @@ import { Category } from '../entities/category.entity'
 import { CategoryMapper } from '../mapper/category-mapper'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { CreateCategoryDto } from '../dto/create-category.dto'
-import { UpdateCategoryDto } from '../dto/update-category.dto'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
+import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import { Paginated } from 'nestjs-paginate'
+import { hash } from 'typeorm/util/StringUtils'
+import { ResponseCategoryDto } from '../dto/response-category.dto'
 
 describe('CategoryService', () => {
   let service: CategoryService
   let repository: Repository<Category>
   let mapper: CategoryMapper
+  let cache: Cache
 
   const mapperMock = {
     toEntity: jest.fn(),
+    toDto: jest.fn(),
+  }
+
+  const cacheMock = {
+    get: jest.fn(),
+    set: jest.fn(),
+    store: { keys: jest.fn() },
   }
 
   beforeEach(async () => {
@@ -26,12 +37,14 @@ describe('CategoryService', () => {
           provide: getRepositoryToken(Category),
           useClass: Repository,
         },
+        { provide: CACHE_MANAGER, useValue: cacheMock },
       ],
     }).compile()
 
     service = module.get<CategoryService>(CategoryService)
     repository = module.get<Repository<Category>>(getRepositoryToken(Category))
     mapper = module.get<CategoryMapper>(CategoryMapper)
+    cache = module.get<Cache>(CACHE_MANAGER)
   })
 
   it('should be defined', () => {
@@ -39,27 +52,58 @@ describe('CategoryService', () => {
   })
 
   describe('findAll', () => {
-    it('should return an array of categories', async () => {
-      const categories = [new Category()]
-      jest.spyOn(repository, 'find').mockResolvedValue(categories)
-      expect(await service.findAll()).toEqual(categories)
+    it('should return a page of categories', async () => {
+      const paginateOptions = {
+        page: 1,
+        limit: 10,
+        path: 'http://localhost:3000/api/category',
+      }
+
+      const page = {
+        data: [],
+        meta: {
+          itemsPerPage: 1,
+          totalItems: 4,
+          currentPage: 1,
+          totalPages: 4,
+        },
+        links: {
+          current:
+            'http://localhost:3000/category?page=1&limit=1&sortBy=name:ASC',
+        },
+      } as Paginated<Category>
+      jest.spyOn(cacheMock, 'get').mockResolvedValue(page)
+      const result: any = await service.findAll(paginateOptions)
+
+      expect(cacheMock.get).toHaveBeenCalledWith(
+        `all_categories_page_${hash(JSON.stringify(paginateOptions))}`,
+      )
+      expect(result).toEqual(page)
     })
   })
   describe('findOne', () => {
     it('should create a category', async () => {
       const category = new Category()
+      jest.spyOn(cacheMock, 'get').mockResolvedValue(Promise.resolve(null))
       jest.spyOn(repository, 'findOneBy').mockResolvedValue(category)
-      expect(await service.findOne('uuid')).toBe(category)
+      expect(
+        await service.findOne('d69cf3db-b77d-4181-b3cd-5ca8107fb6a7'),
+      ).toEqual(category)
     })
-    it('should throw a Not Found Exception', async () => {
+    jest.spyOn(cacheMock.store, 'keys').mockResolvedValue([])
+    it('should throw a NotFoundException', async () => {
       jest.spyOn(repository, 'findOneBy').mockResolvedValue(undefined)
-      await expect(service.findOne('uuid')).rejects.toThrow(NotFoundException)
+      await expect(
+        service.findOne('d69cf3db-b77d-4181-b3cd-5ca8107fb6a7'),
+      ).rejects.toThrow(NotFoundException)
     })
   })
   describe('create', () => {
     it('should return a category', async () => {
       const category = new Category()
-      category.name = 'PC'
+      category.name = 'MARVEL'
+
+      const dto = new ResponseCategoryDto()
 
       const mockQuery = {
         where: jest.fn().mockReturnThis(),
@@ -70,11 +114,12 @@ describe('CategoryService', () => {
         .mockReturnValue(mockQuery as any)
       jest.spyOn(mapper, 'toEntity').mockReturnValue(category)
       jest.spyOn(repository, 'save').mockResolvedValue(category)
+      jest.spyOn(mapper, 'toDto').mockReturnValue(dto)
       jest.spyOn(service, 'categoryExists').mockResolvedValue(null)
+      jest.spyOn(cacheMock.store, 'keys').mockResolvedValue([])
 
-      expect(await service.create(new CreateCategoryDto())).toBe(category)
-      expect(repository.save).toHaveBeenCalled()
-      expect(mapper.toEntity).toHaveBeenCalled()
+      const result = await service.create(dto)
+      expect(result).toEqual(dto)
     })
     it('should throw a BadRequestException because of empty  name', async () => {
       const createCategory = new CreateCategoryDto()
@@ -87,20 +132,23 @@ describe('CategoryService', () => {
       const category = new Category()
       category.name = 'PC'
 
+      const dto = new ResponseCategoryDto()
+
       const mockQuery = {
         where: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(category),
       }
-      const updateCategory = new UpdateCategoryDto()
 
       jest
         .spyOn(repository, 'createQueryBuilder')
         .mockReturnValue(mockQuery as any)
       jest.spyOn(repository, 'findOneBy').mockResolvedValue(category)
       jest.spyOn(repository, 'save').mockResolvedValue(category)
+      jest.spyOn(mapper, 'toDto').mockReturnValue(dto)
+      jest.spyOn(cacheMock.store, 'keys').mockResolvedValue([])
 
-      const result = await service.update('uuid', updateCategory)
-      expect(result).toEqual(category)
+      const result = await service.update(category.id, category)
+      expect(dto).toEqual(result)
     })
     it('should throw a BadRequestException because of empty name', async () => {
       const createCategory = new CreateCategoryDto()
@@ -118,16 +166,16 @@ describe('CategoryService', () => {
       const result = await service.remove('uuid')
       expect(result).toEqual(category)
     })
-    it('should throw a Not Found Exception', async () => {
+    it('should throw a NotFoundException', async () => {
       jest.spyOn(service, 'categoryExists').mockReturnValue(null)
       await expect(service.remove('uuid')).rejects.toThrow(NotFoundException)
     })
   })
 
-  describe('removeSoft', () => {
+  describe('changeIsActive', () => {
     it('should change isActive to false', async () => {
       const category = new Category()
-      category.name = 'PC'
+      category.name = 'MARVEL'
       category.isActive = true
 
       const mockQuery = {
@@ -141,14 +189,16 @@ describe('CategoryService', () => {
       jest.spyOn(repository, 'findOneBy').mockResolvedValue(category)
       jest.spyOn(repository, 'save').mockResolvedValue(category)
 
-      const result = await service.removeSoft('uuid')
+      const result = await service.removeSoft(
+        'd69cf3db-b77d-4181-b3cd-5ca8107fb6a7',
+      )
       expect(result).toEqual(category)
     })
-    it('should throw a Not Found Exception', async () => {
+    it('should throw a NotFoundException', async () => {
       jest.spyOn(repository, 'findOneBy').mockReturnValue(null)
-      await expect(service.removeSoft('uuid')).rejects.toThrow(
-        NotFoundException,
-      )
+      await expect(
+        service.removeSoft('d69cf3db-b77d-4181-b3cd-5ca8107fb6a7'),
+      ).rejects.toThrow(NotFoundException)
     })
   })
   describe('categoryExists', () => {

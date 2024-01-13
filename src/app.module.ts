@@ -1,27 +1,21 @@
 import { Module } from '@nestjs/common'
-import { CategoryModule } from './category/category.module'
-import { TypeOrmModule } from '@nestjs/typeorm'
-import { ProductMapper } from './products/mapper/product-mapper'
-import { CategoryMapper } from './category/mapper/category-mapper'
-import { ProductsModule } from './products/products.module'
-import { SuppliersModule } from './suppliers/suppliers.module'
-import { SupplierMapper } from './suppliers/mappers/supplier-mapper'
+import { CategoryModule } from './rest/category/category.module'
+import { ProductMapper } from './rest/products/mapper/product-mapper'
+import { CategoryMapper } from './rest/category/mapper/category-mapper'
+import { ProductsModule } from './rest/products/products.module'
+import { SuppliersModule } from './rest/suppliers/suppliers.module'
+import { SupplierMapper } from './rest/suppliers/mappers/supplier-mapper'
+import { StorageModule } from './rest/storage/storage.module'
+import { ConfigModule } from '@nestjs/config'
+import { DatabaseModule } from './config/database/database.module'
 
 @Module({
   imports: [
     ProductsModule,
+    StorageModule,
     CategoryModule,
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'admin',
-      password: 'admin1234',
-      database: 'clowns',
-      synchronize: true,
-      autoLoadEntities: true,
-      entities: [`${__dirname}/**/*.entity{.ts,.js}`],
-    }),
+    ConfigModule.forRoot(),
+    DatabaseModule,
     SuppliersModule,
   ],
   providers: [ProductMapper, CategoryMapper, SupplierMapper],

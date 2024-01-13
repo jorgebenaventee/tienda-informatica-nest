@@ -5,6 +5,8 @@ import { ResponseProductDto } from '../dto/response-product.dto'
 import { NotFoundException } from '@nestjs/common'
 import { CreateProductDto } from '../dto/create-product.dto'
 import { UpdateProductDto } from '../dto/update-product.dto'
+import { CacheModule } from '@nestjs/cache-manager'
+import { Paginated } from 'nestjs-paginate'
 
 describe('ProductsController', () => {
   let controller: ProductsController
@@ -15,11 +17,14 @@ describe('ProductsController', () => {
     findOne: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    remove: jest.fn(),
     removeSoft: jest.fn(),
+    updateImage: jest.fn(),
   }
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [CacheModule.register()],
       controllers: [ProductsController],
       providers: [
         {
@@ -38,10 +43,28 @@ describe('ProductsController', () => {
   })
   describe('findAll', () => {
     it('should return an array of products', async () => {
-      const result: Array<ResponseProductDto> = []
-      jest.spyOn(service, 'findAll').mockResolvedValue(result)
-      const products = await controller.findAll()
-      expect(products).toBeInstanceOf(Array)
+      const paginateOptions = {
+        page: 1,
+        limit: 3,
+        path: 'products',
+      }
+      const page: any = {
+        data: [],
+        meta: {
+          itemsPerPage: 3,
+          totalItems: 0,
+          currentPage: 1,
+          totalPages: 0,
+        },
+        links: {
+          current:
+            'http://localhost:3000/api/products?page=1&limit=3&sortBy=id:ASC',
+        },
+      } as Paginated<ResponseProductDto>
+      jest.spyOn(service, 'findAll').mockResolvedValue(page)
+      const result: any = await controller.findAll(paginateOptions)
+
+      expect(result.meta.totalPages).toEqual(0)
       expect(service.findAll).toHaveBeenCalled()
     })
   })
@@ -97,7 +120,7 @@ describe('ProductsController', () => {
       expect(result).toBeInstanceOf(ResponseProductDto)
     })
   })
-  describe('remove', () => {
+  describe('removeSoft', () => {
     it('should delete a product', async () => {
       const id = 'uuid'
       const result = new ResponseProductDto()

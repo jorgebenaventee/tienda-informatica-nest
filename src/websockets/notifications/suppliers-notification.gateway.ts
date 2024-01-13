@@ -4,7 +4,9 @@ import { Logger } from '@nestjs/common'
 import { ResponseSupplierDto } from '../../rest/suppliers/dto/response-supplier.dto'
 import { Notification, NotificationType } from './models/notification.model'
 
-@WebSocketGateway()
+const ENDPOINT: string = 'ws/api/suppliers'
+
+@WebSocketGateway({ namespace: ENDPOINT })
 export class SuppliersNotificationGateway {
   @WebSocketServer()
   server: Server

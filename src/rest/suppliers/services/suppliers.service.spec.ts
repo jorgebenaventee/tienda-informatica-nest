@@ -9,62 +9,148 @@ import { ResponseSupplierDto } from '../dto/response-supplier.dto'
 import { NotFoundException } from '@nestjs/common'
 import { CreateSupplierDto } from '../dto/create-supplier.dto'
 import { UpdateSupplierDto } from '../dto/update-supplier.dto'
+import { CategoryService } from '../../category/services/category.service'
+import { Cache } from 'cache-manager'
+import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import { SuppliersNotificationGateway } from '../../../websockets/notifications/suppliers-notification.gateway'
+import { Notification } from '../../../websockets/notifications/models/notification.model'
+import { Paginated } from 'nestjs-paginate'
 
 describe('SuppliersService', () => {
   let service: SuppliersService
   let suppliersRepository: Repository<Supplier>
-  let categoryRepository: Repository<Category>
+  let categoryService: CategoryService
   let mapper: SupplierMapper
+  let cacheManager: Cache
+  let notificationGateway: SuppliersNotificationGateway
+
+  const categoryServiceMock = {
+    checkCategory: jest.fn(),
+  }
 
   const mapperMock = {
     toDto: jest.fn(),
     toEntity: jest.fn(),
   }
 
+  const notificationGatewayMock = {
+    sendMessage: jest.fn(),
+  }
+
+  const cacheManagerMock = {
+    get: jest.fn(() => Promise.resolve()),
+    set: jest.fn(() => Promise.resolve()),
+    store: {
+      keys: jest.fn(),
+    },
+  }
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SuppliersService,
+        { provide: CategoryService, useValue: categoryServiceMock },
         { provide: getRepositoryToken(Supplier), useClass: Repository },
         { provide: getRepositoryToken(Category), useClass: Repository },
         { provide: SupplierMapper, useValue: mapperMock },
+        { provide: CACHE_MANAGER, useValue: cacheManagerMock },
+        {
+          provide: SuppliersNotificationGateway,
+          useValue: notificationGatewayMock,
+        },
       ],
     }).compile()
 
     service = module.get<SuppliersService>(SuppliersService)
+    categoryService = module.get<CategoryService>(CategoryService)
     suppliersRepository = module.get<Repository<Supplier>>(
       getRepositoryToken(Supplier),
     )
-    categoryRepository = module.get<Repository<Category>>(
-      getRepositoryToken(Category),
-    )
     mapper = module.get<SupplierMapper>(SupplierMapper)
+    cacheManager = module.get<Cache>(CACHE_MANAGER)
+    notificationGateway = module.get<SuppliersNotificationGateway>(
+      SuppliersNotificationGateway,
+    )
   })
 
   it('should be defined', () => {
     expect(service).toBeDefined()
   })
+
   describe('findAll', () => {
-    it('should return an array of suppliers', async () => {
-      const supplierResponseDto: ResponseSupplierDto[] = []
-      const mockQuery = {
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue(supplierResponseDto),
+    it('should return a page of suppliers', async () => {
+      const paginateOptions = {
+        page: 1,
+        limit: 10,
+        path: 'suppliers',
       }
+
+      jest.spyOn(cacheManager, 'get').mockResolvedValue(Promise.resolve(null))
+      jest.spyOn(cacheManager, 'set').mockResolvedValue()
+
+      const mockQueryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([]),
+      }
+
       jest
         .spyOn(suppliersRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQuery as any)
+        .mockReturnValue(mockQueryBuilder as any)
+      jest.spyOn(mapper, 'toDto').mockReturnValue(new ResponseSupplierDto())
 
-      jest.spyOn(mapper, 'toDto').mockReturnValue(supplierResponseDto[0])
+      const result: any = await service.findAll(paginateOptions)
+      expect(result.meta.itemsPerPage).toEqual(paginateOptions.limit)
+      expect(result.meta.currentPage).toEqual(paginateOptions.page)
+      expect(result.links.current).toEqual(
+        `${paginateOptions.path}?page=${paginateOptions.page}&limit=${paginateOptions.limit}&sortBy=id:ASC`,
+      )
+      expect(cacheManager.get).toHaveBeenCalled()
+      expect(cacheManager.set).toHaveBeenCalled()
+    })
+    it('should return a page of suppliers from cache', async () => {
+      const paginateOptions = {
+        page: 1,
+        limit: 10,
+        path: 'suppliers',
+      }
 
-      const result = await service.findAll()
-      expect(result).toEqual(supplierResponseDto)
+      const testSuppliers = {
+        data: [],
+        meta: {
+          itemsPerPage: 10,
+          totalItems: 1,
+          totalPages: 1,
+          currentPage: 1,
+        },
+        links: {
+          current:
+            'http://localhost:3000/suppliers?page=1&limit=10&sort=name:ASC',
+        },
+      } as Paginated<ResponseSupplierDto>
+
+      jest
+        .spyOn(cacheManager.store, 'keys')
+        .mockResolvedValue(['suppliers:1:10:ASC'])
+
+      jest.spyOn(cacheManager, 'get').mockResolvedValue(testSuppliers)
+
+      const result: any = await service.findAll(paginateOptions)
+
+      expect(result.meta.itemsPerPage).toEqual(paginateOptions.limit)
+      expect(result.meta.currentPage).toEqual(paginateOptions.page)
+      expect(result.links.current).toEqual(
+        `http://localhost:3000/suppliers?page=${paginateOptions.page}&limit=${paginateOptions.limit}&sort=name:ASC`,
+      )
+      expect(cacheManager.get).toHaveBeenCalled()
     })
   })
+
   describe('findOne', () => {
     it('should return a supplier', async () => {
+      jest.spyOn(cacheManager, 'get').mockResolvedValue(Promise.resolve(null))
       const supplierResponseDto: ResponseSupplierDto = {
         id: '3c34de0e-ffb9-4f26-9264-b1673ad35b03',
         name: 'supplier',
@@ -91,6 +177,7 @@ describe('SuppliersService', () => {
       expect(result).toEqual(supplierResponseDto)
     })
     it('should throw a NotFoundException', async () => {
+      jest.spyOn(cacheManager, 'get').mockResolvedValue(Promise.resolve(null))
       const mockQuery = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
@@ -102,7 +189,29 @@ describe('SuppliersService', () => {
       const result = service.findOne('3c34de0e-ffb9-4f26-9264-b1673ad35b03')
       await expect(result).rejects.toThrow(NotFoundException)
     })
+    it('should return a supplier from cache', async () => {
+      const supplierResponseDto: ResponseSupplierDto = {
+        id: '3c34de0e-ffb9-4f26-9264-b1673ad35b03',
+        name: 'supplier',
+        contact: 1,
+        address: 'address',
+        hired_at: new Date(),
+        category: 'category',
+        is_deleted: false,
+      }
+      jest
+        .spyOn(cacheManager.store, 'keys')
+        .mockResolvedValue(['supplier_3c34de0e-ffb9-4f26-9264-b1673ad35b03'])
+      jest
+        .spyOn(cacheManager, 'get')
+        .mockResolvedValue(supplierResponseDto as any)
+      const result = await service.findOne(
+        '3c34de0e-ffb9-4f26-9264-b1673ad35b03',
+      )
+      expect(result).toEqual(supplierResponseDto)
+    })
   })
+
   describe('create', () => {
     it('should create a supplier', async () => {
       const createSupplierDto: CreateSupplierDto = {
@@ -116,14 +225,23 @@ describe('SuppliersService', () => {
       const mockCategory = new Category()
       const mockSupplier = new Supplier()
       const supplierReponseDto = new ResponseSupplierDto()
+      let notification: Notification<ResponseSupplierDto>
 
-      jest.spyOn(service, 'checkCategory').mockResolvedValue(mockCategory)
+      jest
+        .spyOn(notificationGatewayMock, 'sendMessage')
+        .mockResolvedValue(notification)
+      jest
+        .spyOn(categoryService, 'checkCategory')
+        .mockResolvedValue(mockCategory)
       jest.spyOn(mapper, 'toEntity').mockReturnValue(mockSupplier)
       jest.spyOn(suppliersRepository, 'save').mockResolvedValue(mockSupplier)
+      jest.spyOn(cacheManager.store, 'keys').mockResolvedValue([])
       jest.spyOn(mapper, 'toDto').mockReturnValue(supplierReponseDto)
+      jest.spyOn(notificationGateway, 'sendMessage').mockImplementation()
 
       const result = await service.create(createSupplierDto)
       expect(result).toEqual(supplierReponseDto)
+      expect(notificationGateway.sendMessage).toHaveBeenCalled()
     })
     it('should throw a BadRequest name emtpy', async () => {
       const createSupplierDto: CreateSupplierDto = {
@@ -198,6 +316,7 @@ describe('SuppliersService', () => {
       await expect(result).rejects.toThrow(TypeError)
     })
   })
+
   describe('update', () => {
     it('should update a supplier', async () => {
       const updateSupplierDto: UpdateSupplierDto = {
@@ -214,7 +333,7 @@ describe('SuppliersService', () => {
       jest
         .spyOn(suppliersRepository, 'createQueryBuilder')
         .mockReturnValue(mockQuery as any)
-      jest.spyOn(service, 'checkCategory').mockResolvedValue(category)
+      jest.spyOn(categoryService, 'checkCategory').mockResolvedValue(category)
       jest.spyOn(suppliersRepository, 'save').mockResolvedValue(supplier)
       jest.spyOn(mapper, 'toDto').mockReturnValue(supplierResponseDto)
 
@@ -288,6 +407,7 @@ describe('SuppliersService', () => {
       await expect(result).rejects.toThrow(TypeError)
     })
   })
+
   describe('remove', () => {
     it('should remove a supplier', async () => {
       const supplier = new Supplier()
@@ -315,31 +435,6 @@ describe('SuppliersService', () => {
       await expect(
         service.remove('3c34de0e-ffb9-4f26-9264-b1673ad35b03'),
       ).rejects.toThrow(NotFoundException)
-    })
-  })
-  describe('checkCategory', () => {
-    it('should return a category', async () => {
-      const category = new Category()
-      const mockQuery = {
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(category),
-      }
-      jest
-        .spyOn(categoryRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQuery as any)
-      expect(await service.checkCategory('PC')).toEqual(category)
-    })
-    it('should throw a NotFoundException', async () => {
-      const mockQuery = {
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(undefined),
-      }
-      jest
-        .spyOn(categoryRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQuery as any)
-      await expect(service.checkCategory('PC')).rejects.toThrow(
-        NotFoundException,
-      )
     })
   })
 })

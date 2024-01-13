@@ -5,6 +5,8 @@ import { ResponseSupplierDto } from '../dto/response-supplier.dto'
 import { NotFoundException } from '@nestjs/common'
 import { CreateSupplierDto } from '../dto/create-supplier.dto'
 import { UpdateSupplierDto } from '../dto/update-supplier.dto'
+import { Paginated } from 'nestjs-paginate'
+import { CacheModule } from '@nestjs/cache-manager'
 
 describe('SuppliersController', () => {
   let controller: SuppliersController
@@ -20,6 +22,7 @@ describe('SuppliersController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [CacheModule.register()],
       controllers: [SuppliersController],
       providers: [
         {
@@ -38,11 +41,34 @@ describe('SuppliersController', () => {
   })
 
   describe('findAll', () => {
-    it('should return an array of suppliers', async () => {
-      const result: Array<ResponseSupplierDto> = []
-      jest.spyOn(service, 'findAll').mockResolvedValue(result)
-      const suppliers = await controller.findAll()
-      expect(suppliers).toBeInstanceOf(Array)
+    it('should return a page of suppliers', async () => {
+      const paginateOptions = {
+        page: 1,
+        limit: 10,
+        path: 'suppliers',
+      }
+      const page: any = {
+        data: [],
+        meta: {
+          itemsPerPage: 10,
+          totalItems: 1,
+          totalPages: 1,
+          currentPage: 1,
+        },
+        links: {
+          current: 'http://localhost:3000/api/suppliers?page=1&limit=10',
+        },
+      } as Paginated<ResponseSupplierDto>
+
+      jest.spyOn(service, 'findAll').mockResolvedValue(page)
+      const result: any = await controller.findAll(paginateOptions)
+
+      expect(result.meta.itemsPerPage).toEqual(paginateOptions.limit)
+      expect(result.meta.currentPage).toEqual(paginateOptions.page)
+      expect(result.meta.totalPages).toEqual(1)
+      expect(result.links.current).toEqual(
+        `http://localhost:3000/api/${paginateOptions.path}?page=${paginateOptions.page}&limit=${paginateOptions.limit}`,
+      )
       expect(service.findAll).toHaveBeenCalled()
     })
   })

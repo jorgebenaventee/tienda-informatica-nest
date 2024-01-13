@@ -14,11 +14,15 @@ import { Paginated } from 'nestjs-paginate'
 import { hash } from 'typeorm/util/StringUtils'
 import { Cache } from 'cache-manager'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import { Supplier } from '../../suppliers/entities/supplier.entity'
+import { CategoryService } from '../../category/services/category.service'
+import { SuppliersService } from '../../suppliers/services/suppliers.service'
 
 describe('ProductsService', () => {
   let service: ProductsService
   let productsRepository: Repository<Product>
-  let categoryRepository: Repository<Category>
+  let categoryService: CategoryService
+  let suppliersService: SuppliersService
   let mapper: ProductMapper
   let storageService: StorageService
   let cacheManager: Cache
@@ -36,6 +40,14 @@ describe('ProductsService', () => {
     },
   }
 
+  const categoryServiceMock = {
+    checkCategory: jest.fn(),
+  }
+
+  const suppliersServiceMock = {
+    checkSupplier: jest.fn(),
+  }
+
   const storageServiceMock = {
     removeFile: jest.fn(),
     getFileNameWithouUrl: jest.fn(),
@@ -48,6 +60,8 @@ describe('ProductsService', () => {
         { provide: getRepositoryToken(Product), useClass: Repository },
         { provide: getRepositoryToken(Category), useClass: Repository },
         { provide: ProductMapper, useValue: mapperMock },
+        { provide: CategoryService, useValue: categoryServiceMock },
+        { provide: SuppliersService, useValue: suppliersServiceMock },
         { provide: StorageService, useValue: storageServiceMock },
         { provide: CACHE_MANAGER, useValue: cacheManagerMock },
       ],
@@ -57,9 +71,8 @@ describe('ProductsService', () => {
     productsRepository = module.get<Repository<Product>>(
       getRepositoryToken(Product),
     )
-    categoryRepository = module.get<Repository<Category>>(
-      getRepositoryToken(Category),
-    )
+    categoryService = module.get<CategoryService>(CategoryService)
+    suppliersService = module.get<SuppliersService>(SuppliersService)
     mapper = module.get<ProductMapper>(ProductMapper)
     storageService = module.get<StorageService>(StorageService)
     cacheManager = module.get<Cache>(CACHE_MANAGER)
@@ -73,7 +86,7 @@ describe('ProductsService', () => {
       const paginateOptions = {
         page: 1,
         limit: 3,
-        path: 'http://localhost:3000/api/funkos',
+        path: 'http://localhost:3000/api/products',
       }
       const page: any = {
         data: [],
@@ -85,7 +98,7 @@ describe('ProductsService', () => {
         },
         links: {
           current:
-            'http://localhost:3000/api/funkos?page=1&limit=3&sortBy=id:ASC',
+            'http://localhost:3000/api/products?page=1&limit=3&sortBy=id:ASC',
         },
       } as Paginated<ResponseProductDto>
       jest.spyOn(cacheManager, 'get').mockResolvedValue(page)
@@ -133,10 +146,12 @@ describe('ProductsService', () => {
     it('should create a product', async () => {
       const createProductDto = new CreateProductDto()
       const category = new Category()
+      const supplier = new Supplier()
       const product = new Product()
       const productResponseDto = new ResponseProductDto()
 
-      jest.spyOn(service, 'checkCategory').mockResolvedValue(category)
+      jest.spyOn(categoryService, 'checkCategory').mockResolvedValue(category)
+      jest.spyOn(suppliersService, 'checkSupplier').mockResolvedValue(supplier)
       jest.spyOn(mapper, 'toEntity').mockReturnValue(product)
       jest.spyOn(productsRepository, 'save').mockResolvedValue(product)
       jest.spyOn(mapper, 'toDto').mockReturnValue(productResponseDto)
@@ -159,7 +174,7 @@ describe('ProductsService', () => {
       jest
         .spyOn(productsRepository, 'createQueryBuilder')
         .mockReturnValue(mockQuery as any)
-      jest.spyOn(service, 'checkCategory').mockResolvedValue(category)
+      jest.spyOn(categoryService, 'checkCategory').mockResolvedValue(category)
       jest.spyOn(productsRepository, 'save').mockResolvedValue(product)
       jest.spyOn(mapper, 'toDto').mockReturnValue(productResponseDto)
       jest.spyOn(cacheManagerMock.store, 'keys').mockResolvedValue([])
@@ -234,8 +249,8 @@ describe('ProductsService', () => {
   })
   describe('updateImage', () => {
     it('should update a product image', async () => {
-      const mockFunko = new Product()
-      const mockResponseFunkoDto = new ResponseProductDto()
+      const mockProduct = new Product()
+      const mockResponseProductDto = new ResponseProductDto()
       const mockFile: Express.Multer.File = {
         fieldname: 'image',
         originalname: 'image',
@@ -249,44 +264,19 @@ describe('ProductsService', () => {
         buffer: null,
       }
 
-      jest.spyOn(productsRepository, 'findOneBy').mockResolvedValue(mockFunko)
+      jest.spyOn(productsRepository, 'findOneBy').mockResolvedValue(mockProduct)
 
       jest.spyOn(storageService, 'removeFile').mockImplementation()
 
-      jest.spyOn(productsRepository, 'save').mockResolvedValue(mockFunko)
+      jest.spyOn(productsRepository, 'save').mockResolvedValue(mockProduct)
 
-      jest.spyOn(mapper, 'toDto').mockReturnValue(mockResponseFunkoDto)
+      jest.spyOn(mapper, 'toDto').mockReturnValue(mockResponseProductDto)
       jest.spyOn(cacheManager.store, 'keys').mockResolvedValue([])
 
       jest.spyOn(cacheManager, 'set').mockResolvedValue()
 
       expect(await service.updateImage('uuid', mockFile)).toEqual(
-        mockResponseFunkoDto,
-      )
-    })
-  })
-  describe('checkCategory', () => {
-    it('should return a category', async () => {
-      const category = new Category()
-      const mockQuery = {
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(category),
-      }
-      jest
-        .spyOn(categoryRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQuery as any)
-      expect(await service.checkCategory('PC')).toEqual(category)
-    })
-    it('should throw a NotFoundException', async () => {
-      const mockQuery = {
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(undefined),
-      }
-      jest
-        .spyOn(categoryRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQuery as any)
-      await expect(service.checkCategory('PC')).rejects.toThrow(
-        NotFoundException,
+        mockResponseProductDto,
       )
     })
   })

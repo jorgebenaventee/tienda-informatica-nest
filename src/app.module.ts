@@ -8,6 +8,7 @@ import { SupplierMapper } from './rest/suppliers/mappers/supplier-mapper'
 import { StorageModule } from './rest/storage/storage.module'
 import { ConfigModule } from '@nestjs/config'
 import { DatabaseModule } from './config/database/database.module'
+import { NotificationsModule } from './websockets/notifications/notifications.module'
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { DatabaseModule } from './config/database/database.module'
     ConfigModule.forRoot(),
     DatabaseModule,
     SuppliersModule,
+    NotificationsModule,
   ],
   providers: [ProductMapper, CategoryMapper, SupplierMapper],
 })

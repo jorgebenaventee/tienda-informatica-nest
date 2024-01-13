@@ -7,12 +7,14 @@ import { Supplier } from './entities/supplier.entity'
 import { Category } from '../category/entities/category.entity'
 import { CacheModule } from '@nestjs/cache-manager'
 import { CategoryModule } from '../category/category.module'
+import { NotificationsModule } from '../../websockets/notifications/notifications.module'
 
 @Module({
   controllers: [SuppliersController],
   providers: [SuppliersService, SupplierMapper],
   imports: [
     CategoryModule,
+    NotificationsModule,
     CacheModule.register(),
     TypeOrmModule.forFeature([Supplier]),
     TypeOrmModule.forFeature([Category]),

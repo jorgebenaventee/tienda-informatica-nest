@@ -10,6 +10,10 @@ import { Cache } from 'cache-manager'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { ResponseSupplierDto } from '../dto/response-supplier.dto'
 import {
+  Notification,
+  NotificationType,
+} from '../../../websockets/notifications/models/notification.model'
+import {
   FilterOperator,
   FilterSuffix,
   paginate,
@@ -17,6 +21,7 @@ import {
 } from 'nestjs-paginate'
 import { hash } from 'typeorm/util/StringUtils'
 import { CategoryService } from '../../category/services/category.service'
+import { SuppliersNotificationGateway } from '../../../websockets/notifications/suppliers-notification.gateway'
 
 @Injectable()
 export class SuppliersService {
@@ -28,6 +33,7 @@ export class SuppliersService {
     private readonly supplierRepository: Repository<Supplier>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly categoryService: CategoryService,
+    private readonly notificationGateway: SuppliersNotificationGateway,
   ) {}
 
   async findAll(query: PaginateQuery) {
@@ -112,6 +118,7 @@ export class SuppliersService {
     const supplierCreated = await this.supplierRepository.save(supplier)
     const dto = this.supplierMapper.toDto(supplierCreated)
     await this.invalidateCacheKey('all_suppliers_page_')
+    await this.sendNotification(NotificationType.CREATE, dto)
     return dto
   }
 
@@ -133,7 +140,11 @@ export class SuppliersService {
         ...updateSupplierDto,
         category,
       })
-      return this.supplierMapper.toDto(supplierUpdated)
+      const dto = this.supplierMapper.toDto(supplierUpdated)
+      await this.invalidateCacheKey('all_suppliers_page_')
+      await this.invalidateCacheKey(`supplier_${id}`)
+      await this.sendNotification(NotificationType.UPDATE, dto)
+      return dto
     } else {
       const supplierUpdated = await this.supplierRepository.save({
         ...supplier,
@@ -143,6 +154,7 @@ export class SuppliersService {
       const dto = this.supplierMapper.toDto(supplierUpdated)
       await this.invalidateCacheKey('all_suppliers_page_')
       await this.invalidateCacheKey(`supplier_${id}`)
+      await this.sendNotification(NotificationType.UPDATE, dto)
       return dto
     }
   }
@@ -163,6 +175,7 @@ export class SuppliersService {
     const dto = this.supplierMapper.toDto(supplierDeleted)
     await this.invalidateCacheKey('all_suppliers_page_')
     await this.invalidateCacheKey(`supplier_${id}`)
+    await this.sendNotification(NotificationType.DELETE, dto)
     return dto
   }
 
@@ -186,5 +199,15 @@ export class SuppliersService {
     const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
     const promises = keysToDelete.map((key) => this.cacheManager.del(key))
     await Promise.all(promises)
+  }
+
+  async sendNotification(type: NotificationType, data: ResponseSupplierDto) {
+    const notification = new Notification<ResponseSupplierDto>(
+      'supplier',
+      type,
+      data,
+      new Date(),
+    )
+    this.notificationGateway.sendMessage(notification)
   }
 }

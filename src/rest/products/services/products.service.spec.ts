@@ -179,6 +179,31 @@ describe('ProductsService', () => {
       expect(await service.create(createProductDto)).toEqual(productResponseDto)
       expect(notificationGateway.sendMessage).toHaveBeenCalled()
     })
+    it('should throw a BadRequestException because of empty name', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.name = ''
+      await expect(service.create(createProductDto)).rejects.toThrow()
+    })
+    it('should throw a BadRequestException because of empty weight', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.weight = null
+      await expect(service.create(createProductDto)).rejects.toThrow()
+    })
+    it('should throw a BadRequestException because of empty price', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.price = null
+      await expect(service.create(createProductDto)).rejects.toThrow()
+    })
+    it('should throw a BadRequestException because of empty stock', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.stock = null
+      await expect(service.create(createProductDto)).rejects.toThrow()
+    })
+    it('should throw a BadRequestException because of empty description', async () => {
+      const createProductDto = new CreateProductDto()
+      createProductDto.description = ''
+      await expect(service.create(createProductDto)).rejects.toThrow()
+    })
   })
   describe('update', () => {
     it('should update a product', async () => {
@@ -201,6 +226,45 @@ describe('ProductsService', () => {
 
       expect(await service.update('uuid', updateProductDto)).toEqual(
         productResponseDto,
+      )
+    })
+    it('should throw a BadRequestException because of empty name', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.name = ''
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow()
+    })
+    it('should throw a BadRequestException because of empty weight', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.weight = null
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow()
+    })
+    it('should throw a BadRequestException because of empty price', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.price = null
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow()
+    })
+    it('should throw a BadRequestException because of empty stock', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.stock = null
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow()
+    })
+    it('should throw a BadRequestException because of empty description', async () => {
+      const updateProductDto = new UpdateProductDto()
+      updateProductDto.description = ''
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow()
+    })
+    it('should throw a NotFoundException', async () => {
+      const updateProductDto = new UpdateProductDto()
+      const mockQuery = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(undefined),
+      }
+      jest
+        .spyOn(productsRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQuery as any)
+      await expect(service.update('uuid', updateProductDto)).rejects.toThrow(
+        NotFoundException,
       )
     })
   })

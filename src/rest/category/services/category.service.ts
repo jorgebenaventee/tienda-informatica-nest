@@ -21,6 +21,11 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate'
 import { ResponseCategoryDto } from '../dto/response-category.dto'
+import { CategoryNotificationGateway } from '../../../websockets/notifications/category-notification.gateway'
+import {
+  Notification,
+  NotificationType,
+} from '../../../websockets/notifications/models/notification.model'
 
 @Injectable()
 export class CategoryService {
@@ -31,6 +36,7 @@ export class CategoryService {
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly notificationGateway: CategoryNotificationGateway,
   ) {}
 
   async findAll(query: PaginateQuery) {
@@ -82,6 +88,7 @@ export class CategoryService {
     const categoryCreated = await this.categoryExists(category.name)
     const dto = this.categoryMapper.toDto(categoryCreated)
     await this.invalidateCacheKey('all_categories')
+    await this.sendNotification(NotificationType.CREATE, dto)
     return dto
   }
 
@@ -105,6 +112,7 @@ export class CategoryService {
       const dto = this.categoryMapper.toDto(saved)
       await this.invalidateCacheKey(`category_${id}`)
       await this.invalidateCacheKey('all_categories')
+      await this.sendNotification(NotificationType.UPDATE, dto)
       return dto
     }
   }
@@ -116,6 +124,7 @@ export class CategoryService {
     } else {
       await this.invalidateCacheKey(`category_${id}`)
       await this.invalidateCacheKey('all_categories')
+      await this.sendNotification(NotificationType.DELETE, category)
       return await this.categoryRepository.remove(category)
     }
   }
@@ -127,6 +136,7 @@ export class CategoryService {
     } else {
       await this.invalidateCacheKey(`category_${id}`)
       await this.invalidateCacheKey('all_categories')
+      await this.sendNotification(NotificationType.DELETE, category)
       return await this.categoryRepository.save({
         ...category,
         isActive: false,
@@ -182,5 +192,15 @@ export class CategoryService {
     const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
     const promises = keysToDelete.map((key) => this.cacheManager.del(key))
     await Promise.all(promises)
+  }
+
+  async sendNotification(type: NotificationType, data: ResponseCategoryDto) {
+    const notification = new Notification<ResponseCategoryDto>(
+      'category',
+      type,
+      data,
+      new Date(),
+    )
+    this.notificationGateway.sendMessage(notification)
   }
 }

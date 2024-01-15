@@ -10,12 +10,15 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Paginated } from 'nestjs-paginate'
 import { hash } from 'typeorm/util/StringUtils'
 import { ResponseCategoryDto } from '../dto/response-category.dto'
+import { CategoryNotificationGateway } from '../../../websockets/notifications/category-notification.gateway'
+import { Notification } from '../../../websockets/notifications/models/notification.model'
 
 describe('CategoryService', () => {
   let service: CategoryService
   let repository: Repository<Category>
   let mapper: CategoryMapper
   let cache: Cache
+  let notificationGateway: CategoryNotificationGateway
 
   const mapperMock = {
     toEntity: jest.fn(),
@@ -28,6 +31,10 @@ describe('CategoryService', () => {
     store: { keys: jest.fn() },
   }
 
+  const notificationGatewayMock = {
+    sendMessage: jest.fn(),
+  }
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -38,6 +45,10 @@ describe('CategoryService', () => {
           useClass: Repository,
         },
         { provide: CACHE_MANAGER, useValue: cacheMock },
+        {
+          provide: CategoryNotificationGateway,
+          useValue: notificationGatewayMock,
+        },
       ],
     }).compile()
 
@@ -45,6 +56,9 @@ describe('CategoryService', () => {
     repository = module.get<Repository<Category>>(getRepositoryToken(Category))
     mapper = module.get<CategoryMapper>(CategoryMapper)
     cache = module.get<Cache>(CACHE_MANAGER)
+    notificationGateway = module.get<CategoryNotificationGateway>(
+      CategoryNotificationGateway,
+    )
   })
 
   it('should be defined', () => {
@@ -104,11 +118,15 @@ describe('CategoryService', () => {
       category.name = 'MARVEL'
 
       const dto = new ResponseCategoryDto()
+      let notification: Notification<ResponseCategoryDto>
 
       const mockQuery = {
         where: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(undefined),
       }
+      jest
+        .spyOn(notificationGatewayMock, 'sendMessage')
+        .mockResolvedValue(notification)
       jest
         .spyOn(repository, 'createQueryBuilder')
         .mockReturnValue(mockQuery as any)
@@ -117,9 +135,11 @@ describe('CategoryService', () => {
       jest.spyOn(mapper, 'toDto').mockReturnValue(dto)
       jest.spyOn(service, 'categoryExists').mockResolvedValue(null)
       jest.spyOn(cacheMock.store, 'keys').mockResolvedValue([])
+      jest.spyOn(notificationGateway, 'sendMessage').mockImplementation()
 
       const result = await service.create(dto)
       expect(result).toEqual(dto)
+      expect(notificationGateway.sendMessage).toHaveBeenCalled()
     })
     it('should throw a BadRequestException because of empty  name', async () => {
       const createCategory = new CreateCategoryDto()

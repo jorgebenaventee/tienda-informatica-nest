@@ -17,6 +17,8 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Supplier } from '../../suppliers/entities/supplier.entity'
 import { CategoryService } from '../../category/services/category.service'
 import { SuppliersService } from '../../suppliers/services/suppliers.service'
+import { ProductsNotificationGateway } from '../../../websockets/notifications/products-notification.gateway'
+import { Notification } from '../../../websockets/notifications/models/notification.model'
 
 describe('ProductsService', () => {
   let service: ProductsService
@@ -26,6 +28,7 @@ describe('ProductsService', () => {
   let mapper: ProductMapper
   let storageService: StorageService
   let cacheManager: Cache
+  let notificationGateway: ProductsNotificationGateway
 
   const mapperMock = {
     toDto: jest.fn(),
@@ -38,6 +41,10 @@ describe('ProductsService', () => {
     store: {
       keys: jest.fn(),
     },
+  }
+
+  const notificationGatewayMock = {
+    sendMessage: jest.fn(),
   }
 
   const categoryServiceMock = {
@@ -64,6 +71,10 @@ describe('ProductsService', () => {
         { provide: SuppliersService, useValue: suppliersServiceMock },
         { provide: StorageService, useValue: storageServiceMock },
         { provide: CACHE_MANAGER, useValue: cacheManagerMock },
+        {
+          provide: ProductsNotificationGateway,
+          useValue: notificationGatewayMock,
+        },
       ],
     }).compile()
 
@@ -76,6 +87,9 @@ describe('ProductsService', () => {
     mapper = module.get<ProductMapper>(ProductMapper)
     storageService = module.get<StorageService>(StorageService)
     cacheManager = module.get<Cache>(CACHE_MANAGER)
+    notificationGateway = module.get<ProductsNotificationGateway>(
+      ProductsNotificationGateway,
+    )
   })
 
   it('should be defined', () => {
@@ -149,15 +163,21 @@ describe('ProductsService', () => {
       const supplier = new Supplier()
       const product = new Product()
       const productResponseDto = new ResponseProductDto()
+      let notification: Notification<ResponseProductDto>
 
+      jest
+        .spyOn(notificationGatewayMock, 'sendMessage')
+        .mockResolvedValue(notification)
       jest.spyOn(categoryService, 'checkCategory').mockResolvedValue(category)
       jest.spyOn(suppliersService, 'checkSupplier').mockResolvedValue(supplier)
       jest.spyOn(mapper, 'toEntity').mockReturnValue(product)
       jest.spyOn(productsRepository, 'save').mockResolvedValue(product)
       jest.spyOn(mapper, 'toDto').mockReturnValue(productResponseDto)
       jest.spyOn(cacheManagerMock.store, 'keys').mockResolvedValue([])
+      jest.spyOn(notificationGateway, 'sendMessage').mockImplementation()
 
       expect(await service.create(createProductDto)).toEqual(productResponseDto)
+      expect(notificationGateway.sendMessage).toHaveBeenCalled()
     })
   })
   describe('update', () => {

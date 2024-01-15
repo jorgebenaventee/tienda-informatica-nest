@@ -25,6 +25,11 @@ import { hash } from 'typeorm/util/StringUtils'
 import { ResponseProductDto } from '../dto/response-product.dto'
 import { SuppliersService } from '../../suppliers/services/suppliers.service'
 import { CategoryService } from '../../category/services/category.service'
+import {
+  Notification,
+  NotificationType,
+} from '../../../websockets/notifications/models/notification.model'
+import { ProductsNotificationGateway } from '../../../websockets/notifications/products-notification.gateway'
 
 @Injectable()
 export class ProductsService {
@@ -38,6 +43,7 @@ export class ProductsService {
     private readonly categoryService: CategoryService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly supplierService: SuppliersService,
+    private readonly notificationGateway: ProductsNotificationGateway,
   ) {}
 
   async findAll(query: PaginateQuery) {
@@ -120,6 +126,7 @@ export class ProductsService {
     const productCreated = await this.productRepository.save(product)
     const dto = this.productMapper.toDto(productCreated)
     await this.invalidateCacheKey('all_products_page_')
+    await this.sendNotification(NotificationType.CREATE, dto)
     return dto
   }
 
@@ -154,6 +161,7 @@ export class ProductsService {
     const dto = this.productMapper.toDto(productUpdated)
     await this.invalidateCacheKey('all_products_page_')
     await this.invalidateCacheKey(`product_${id}`)
+    await this.sendNotification(NotificationType.UPDATE, dto)
     return dto
   }
 
@@ -180,6 +188,7 @@ export class ProductsService {
     const dto = this.productMapper.toDto(productDeleted)
     await this.invalidateCacheKey('all_products_page_')
     await this.invalidateCacheKey(`product_${id}`)
+    await this.sendNotification(NotificationType.DELETE, dto)
     return dto
   }
 
@@ -201,6 +210,7 @@ export class ProductsService {
     const dto = this.productMapper.toDto(productDeleted)
     await this.invalidateCacheKey('all_products_page_')
     await this.invalidateCacheKey(`product_${id}`)
+    await this.sendNotification(NotificationType.DELETE, dto)
     return dto
   }
 
@@ -227,6 +237,7 @@ export class ProductsService {
     const dto = this.productMapper.toDto(productUpdated)
     await this.invalidateCacheKey('all_products_page_')
     await this.invalidateCacheKey(`product_${id}`)
+    await this.sendNotification(NotificationType.UPDATE, dto)
     return dto
   }
 
@@ -235,5 +246,14 @@ export class ProductsService {
     const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
     const promises = keysToDelete.map((key) => this.cacheManager.del(key))
     await Promise.all(promises)
+  }
+  async sendNotification(type: NotificationType, data: ResponseProductDto) {
+    const notification = new Notification<ResponseProductDto>(
+      'products',
+      type,
+      data,
+      new Date(),
+    )
+    this.notificationGateway.sendMessage(notification)
   }
 }

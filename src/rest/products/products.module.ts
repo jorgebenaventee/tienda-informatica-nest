@@ -9,6 +9,7 @@ import { StorageModule } from '../storage/storage.module'
 import { CacheModule } from '@nestjs/cache-manager'
 import { SuppliersModule } from '../suppliers/suppliers.module'
 import { CategoryModule } from '../category/category.module'
+import { NotificationsModule } from '../../websockets/notifications/notifications.module'
 
 @Module({
   controllers: [ProductsController],
@@ -16,6 +17,7 @@ import { CategoryModule } from '../category/category.module'
   imports: [
     SuppliersModule,
     CategoryModule,
+    NotificationsModule,
     TypeOrmModule.forFeature([Product]),
     TypeOrmModule.forFeature([Category]),
     StorageModule,

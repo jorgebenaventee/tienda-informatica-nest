@@ -10,7 +10,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Paginated } from 'nestjs-paginate'
 import { hash } from 'typeorm/util/StringUtils'
 import { ResponseCategoryDto } from '../dto/response-category.dto'
-import { CategoryNotificationGateway } from '../../../websockets/notifications/category-notification.gateway'
+import { CategoryNotificationGateway } from '../../../websockets/notifications/notifications.gateway'
 import { Notification } from '../../../websockets/notifications/models/notification.model'
 
 describe('CategoryService', () => {

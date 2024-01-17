@@ -21,7 +21,7 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate'
 import { ResponseCategoryDto } from '../dto/response-category.dto'
-import { CategoryNotificationGateway } from '../../../websockets/notifications/category-notification.gateway'
+import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
 import {
   Notification,
   NotificationType,
@@ -36,7 +36,7 @@ export class CategoryService {
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private readonly notificationGateway: CategoryNotificationGateway,
+    private readonly notificationGateway: NotificationGateway,
   ) {}
 
   async findAll(query: PaginateQuery) {

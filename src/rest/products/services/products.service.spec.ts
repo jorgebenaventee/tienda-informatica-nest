@@ -17,8 +17,9 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Supplier } from '../../suppliers/entities/supplier.entity'
 import { CategoryService } from '../../category/services/category.service'
 import { SuppliersService } from '../../suppliers/services/suppliers.service'
-import { ProductsNotificationGateway } from '../../../websockets/notifications/products-notification.gateway'
+
 import { Notification } from '../../../websockets/notifications/models/notification.model'
+import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
 
 describe('ProductsService', () => {
   let service: ProductsService
@@ -28,7 +29,7 @@ describe('ProductsService', () => {
   let mapper: ProductMapper
   let storageService: StorageService
   let cacheManager: Cache
-  let notificationGateway: ProductsNotificationGateway
+  let notificationGateway: NotificationGateway
 
   const mapperMock = {
     toDto: jest.fn(),
@@ -72,7 +73,7 @@ describe('ProductsService', () => {
         { provide: StorageService, useValue: storageServiceMock },
         { provide: CACHE_MANAGER, useValue: cacheManagerMock },
         {
-          provide: ProductsNotificationGateway,
+          provide: NotificationGateway,
           useValue: notificationGatewayMock,
         },
       ],
@@ -87,9 +88,7 @@ describe('ProductsService', () => {
     mapper = module.get<ProductMapper>(ProductMapper)
     storageService = module.get<StorageService>(StorageService)
     cacheManager = module.get<Cache>(CACHE_MANAGER)
-    notificationGateway = module.get<ProductsNotificationGateway>(
-      ProductsNotificationGateway,
-    )
+    notificationGateway = module.get<NotificationGateway>(NotificationGateway)
   })
 
   it('should be defined', () => {

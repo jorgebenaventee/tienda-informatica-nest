@@ -29,7 +29,7 @@ import {
   Notification,
   NotificationType,
 } from '../../../websockets/notifications/models/notification.model'
-import { ProductsNotificationGateway } from '../../../websockets/notifications/products-notification.gateway'
+import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
 
 @Injectable()
 export class ProductsService {
@@ -43,7 +43,7 @@ export class ProductsService {
     private readonly categoryService: CategoryService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly supplierService: SuppliersService,
-    private readonly notificationGateway: ProductsNotificationGateway,
+    private readonly notificationGateway: NotificationGateway,
   ) {}
 
   async findAll(query: PaginateQuery) {
@@ -247,6 +247,7 @@ export class ProductsService {
     const promises = keysToDelete.map((key) => this.cacheManager.del(key))
     await Promise.all(promises)
   }
+
   async sendNotification(type: NotificationType, data: ResponseProductDto) {
     const notification = new Notification<ResponseProductDto>(
       'products',

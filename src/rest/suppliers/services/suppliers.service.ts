@@ -21,7 +21,7 @@ import {
 } from 'nestjs-paginate'
 import { hash } from 'typeorm/util/StringUtils'
 import { CategoryService } from '../../category/services/category.service'
-import { SuppliersNotificationGateway } from '../../../websockets/notifications/suppliers-notification.gateway'
+import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
 
 @Injectable()
 export class SuppliersService {
@@ -33,7 +33,7 @@ export class SuppliersService {
     private readonly supplierRepository: Repository<Supplier>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly categoryService: CategoryService,
-    private readonly notificationGateway: SuppliersNotificationGateway,
+    private readonly notificationGateway: NotificationGateway,
   ) {}
 
   async findAll(query: PaginateQuery) {

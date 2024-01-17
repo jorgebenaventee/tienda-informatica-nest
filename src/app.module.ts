@@ -1,25 +1,25 @@
 import { Module } from '@nestjs/common'
 import { CategoryModule } from './rest/category/category.module'
-import { ProductMapper } from './rest/products/mapper/product-mapper'
-import { CategoryMapper } from './rest/category/mapper/category-mapper'
 import { ProductsModule } from './rest/products/products.module'
 import { SuppliersModule } from './rest/suppliers/suppliers.module'
-import { SupplierMapper } from './rest/suppliers/mappers/supplier-mapper'
 import { StorageModule } from './rest/storage/storage.module'
 import { ConfigModule } from '@nestjs/config'
 import { DatabaseModule } from './config/database/database.module'
 import { NotificationsModule } from './websockets/notifications/notifications.module'
+import { OrdersModule } from './rest/orders/orders.module'
+import { CacheModule } from '@nestjs/cache-manager'
 
 @Module({
   imports: [
-    ProductsModule,
-    StorageModule,
-    CategoryModule,
     ConfigModule.forRoot(),
     DatabaseModule,
+    CacheModule.register(),
+    ProductsModule,
     SuppliersModule,
+    CategoryModule,
+    StorageModule,
     NotificationsModule,
+    OrdersModule,
   ],
-  providers: [ProductMapper, CategoryMapper, SupplierMapper],
 })
 export class AppModule {}

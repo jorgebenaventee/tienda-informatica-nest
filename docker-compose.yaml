@@ -1,22 +1,38 @@
 services:
   postgres-db:
-    container_name: tienda-db_postgres
+    container_name: funkos-db_postgres
     image: postgres:12-alpine
     restart: always
     env_file: .env
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin1234
-      POSTGRES_DB: clowns
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DATABASE}
     ports:
-      - 5432:5432
-    #volumes:
-    #- ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ${POSTGRES_PORT}:5432
+    ##volumes:
+      ##- ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - tienda-network
 
+
   #volumes:
   #storage-dir:
+  mongo-db:
+    container_name: tienda-db_mongo
+    image: mongo:5.0
+    restart: always
+    env_file: .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DATABASE_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+    ports:
+      - ${MONGO_PORT}:27017
+    volumes:
+      - ./database/tienda.js:/docker-entrypoint-initdb.d/tienda.js:ro
+    networks:
+      - tienda-network
 
 networks:
   tienda-network:

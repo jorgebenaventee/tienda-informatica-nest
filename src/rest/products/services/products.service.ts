@@ -31,10 +31,24 @@ import {
 } from '../../../websockets/notifications/models/notification.model'
 import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
 
+/**
+ * Servicio que gestiona las operaciones relacionadas con los productos.
+ */
 @Injectable()
 export class ProductsService {
   private logger = new Logger('ProductsService ')
 
+  /**
+   * Constructor del servicio de productos.
+   *
+   * @param storageService - Servicio de almacenamiento de archivos.
+   * @param productMapper - Mapeador de productos.
+   * @param productRepository - Repositorio de productos proporcionado por TypeORM.
+   * @param categoryService - Servicio de categorías.
+   * @param cacheManager - Gestor de caché.
+   * @param supplierService - Servicio de proveedores.
+   * @param notificationGateway - Puerta de enlace para enviar notificaciones a través de WebSockets.
+   */
   constructor(
     private readonly storageService: StorageService,
     private readonly productMapper: ProductMapper,
@@ -46,6 +60,12 @@ export class ProductsService {
     private readonly notificationGateway: NotificationGateway,
   ) {}
 
+  /**
+   * Busca y devuelve una página paginada de productos.
+   *
+   * @param query - Objeto que contiene los parámetros de paginación y filtrado.
+   * @return Una Promise que resuelve a la página paginada de productos.
+   */
   async findAll(query: PaginateQuery) {
     this.logger.log('Searching for all products')
     const cache: ResponseProductDto[] = await this.cacheManager.get(
@@ -86,6 +106,13 @@ export class ProductsService {
     return dto
   }
 
+  /**
+   * Busca y devuelve un producto por su identificador único.
+   *
+   * @param id - Identificador único del producto a buscar.
+   * @return Una Promise que resuelve al DTO del producto encontrado.
+   * @throws NotFoundException si el producto no se encuentra.
+   */
   async findOne(id: string) {
     this.logger.log(`Searching for product with id: ${id}`)
     const cache: ResponseProductDto = await this.cacheManager.get(
@@ -110,6 +137,12 @@ export class ProductsService {
     }
   }
 
+  /**
+   * Crea un nuevo producto a partir de los datos proporcionados.
+   *
+   * @param createProductDto - Datos para la creación del producto.
+   * @return Una Promise que resuelve al DTO del producto creado.
+   */
   async create(createProductDto: CreateProductDto) {
     this.logger.log('Product created')
     const category: Category = await this.categoryService.checkCategory(
@@ -130,6 +163,14 @@ export class ProductsService {
     return dto
   }
 
+  /**
+   * Actualiza un producto existente según el identificador único.
+   *
+   * @param id - Identificador único del producto a actualizar.
+   * @param updateProductDto - Datos para la actualización del producto.
+   * @return Una Promise que resuelve al DTO del producto actualizado.
+   * @throws NotFoundException si el producto o la categoría no se encuentran.
+   */
   async update(id: string, updateProductDto: UpdateProductDto) {
     this.logger.log(`Updating product with id: ${id}`)
     const category: Category = await this.categoryService.checkCategory(
@@ -165,6 +206,13 @@ export class ProductsService {
     return dto
   }
 
+  /**
+   * Elimina un producto según el identificador único.
+   *
+   * @param id - Identificador único del producto a eliminar.
+   * @return Una Promise que resuelve al DTO del producto eliminado.
+   * @throws NotFoundException si el producto no se encuentra.
+   */
   async remove(id: string) {
     this.logger.log(`Removing product with id: ${id}`)
     const products = await this.productRepository
@@ -192,6 +240,13 @@ export class ProductsService {
     return dto
   }
 
+  /**
+   * Realiza una eliminación suave de un producto según el identificador único.
+   *
+   * @param id - Identificador único del producto a eliminar suavemente.
+   * @return Una Promise que resuelve al DTO del producto eliminado suavemente.
+   * @throws NotFoundException si el producto no se encuentra.
+   */
   async removeSoft(id: string) {
     this.logger.log(`Removing soft product with id: ${id}`)
     const products = await this.productRepository
@@ -214,6 +269,15 @@ export class ProductsService {
     return dto
   }
 
+  /**
+   * Actualiza la imagen de un producto según el identificador único y el archivo proporcionado.
+   *
+   * @param id - Identificador único del producto a actualizar.
+   * @param file - Archivo de imagen a asociar al producto.
+   * @return Una Promise que resuelve al DTO del producto con la imagen actualizada.
+   * @throws NotFoundException si el producto no se encuentra.
+   * @throws BadRequestException si no se proporciona un archivo.
+   */
   async updateImage(id: string, file: Express.Multer.File) {
     this.logger.log(`Updating product image with id ${id}`)
     const productToUpdate = await this.productRepository.findOneBy({ id })
@@ -241,6 +305,12 @@ export class ProductsService {
     return dto
   }
 
+  /**
+   * Invalida las claves de caché que coinciden con el patrón dado.
+   *
+   * @param keyPattern - Patrón de clave de caché a invalidar.
+   * @return Una Promise que se resuelve cuando la invalidación de la caché está completa.
+   */
   async invalidateCacheKey(keyPattern: string): Promise<void> {
     const cacheKeys = await this.cacheManager.store.keys()
     const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
@@ -248,6 +318,12 @@ export class ProductsService {
     await Promise.all(promises)
   }
 
+  /**
+   * Envía una notificación a través de WebSockets con información sobre la operación realizada.
+   *
+   * @param type - Tipo de notificación (CREATE, UPDATE, DELETE).
+   * @param data - Datos de la notificación relacionados con el producto.
+   */
   async sendNotification(type: NotificationType, data: ResponseProductDto) {
     const notification = new Notification<ResponseProductDto>(
       'products',

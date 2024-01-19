@@ -1,40 +1,76 @@
 import { v4 as uuidv4 } from 'uuid'
-import {
-  IsBoolean,
-  IsDate,
-  IsNotEmpty,
-  IsOptional,
-  IsPositive,
-  IsString,
-} from 'class-validator'
+import { ApiProperty } from '@nestjs/swagger'
 
 export class ResponseProductDto {
+  @ApiProperty({
+    example: 'f5b5f2a0-0fda-4f1e-8a5f-0fbd4d9d9c6e',
+    description: 'The id of the product',
+  })
   id: string = uuidv4()
-  @IsNotEmpty({ message: 'Name cannot be empty' })
-  @IsString({ message: 'Name must be a string' })
+
+  @ApiProperty({
+    example: 'PC Gamer',
+    description: 'The name of the product',
+  })
   name: string
-  @IsPositive({ message: 'Weight must be a positive number' })
-  @IsNotEmpty({ message: 'Weight cannot be empty' })
+
+  @ApiProperty({
+    example: 5,
+    description: 'The weight of the product',
+  })
   weight: number
-  @IsPositive({ message: 'Price must be a positive number' })
-  @IsNotEmpty({ message: 'Price cannot be empty' })
+
+  @ApiProperty({
+    example: 1000,
+    description: 'The price of the product',
+  })
   price: number
-  @IsString({ message: 'Image must be a string' })
-  @IsOptional()
-  image?: string
-  @IsNotEmpty({ message: 'Stock cannot be empty' })
-  @IsPositive({ message: 'Stock must be a positive number' })
+
+  @ApiProperty({
+    example: 'https://picsum.photos/200/300',
+    description: 'The image of the product',
+  })
+  image: string
+
+  @ApiProperty({
+    example: 10,
+    description: 'The stock of the product',
+  })
   stock: number
-  @IsNotEmpty({ message: 'Description cannot be empty' })
-  @IsString({ message: 'Description must be a string' })
+
+  @ApiProperty({
+    example: 'A powerful PC',
+    description: 'The description of the product',
+  })
   description: string
-  @IsDate()
+
+  @ApiProperty({
+    example: '2021-09-16T03:45:39.898Z',
+    description: 'The date of creation of the product',
+  })
   createdAt: Date
-  @IsDate()
+
+  @ApiProperty({
+    example: '2021-09-16T03:45:39.898Z',
+    description: 'The date of the last update of the product',
+  })
   updatedAt: Date
-  @IsBoolean()
-  @IsOptional()
-  isDeleted?: boolean
+
+  @ApiProperty({
+    example: false,
+    description: 'The status of the product',
+  })
+  isDeleted: boolean
+
+  @ApiProperty({
+    example: 'PC',
+    description: 'The category of the product',
+  })
   category: string
+
+  @ApiProperty({
+    example: 'f5b5f2a0-0fda-4f1e-8a5f-0fbd4d9d9c6e',
+    description: 'The id of the supplier',
+  })
   supplier: string
 }

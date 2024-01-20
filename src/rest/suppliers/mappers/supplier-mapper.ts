@@ -7,16 +7,16 @@ import { ResponseSupplierDto } from '../dto/response-supplier.dto'
 import { UpdateSupplierDto } from '../dto/update-supplier.dto'
 
 /**
- * Mapper class for transforming supplier data.
+ * Clase Mapper para transformar los datos del proveedor.
  * @class SupplierMapper
  */
 @Injectable()
 export class SupplierMapper {
   /**
-   * Transforms DTO to Supplier entity.
-   * @param {CreateSupplierDto | UpdateSupplierDto} createSupplierDto - Data transfer object for creating or updating a supplier.
-   * @param {Category} category - Category entity.
-   * @returns {Supplier} - Supplier entity.
+   * Transforma el DTO a la entidad Supplier.
+   * @param {CreateSupplierDto | UpdateSupplierDto} createSupplierDto - Objeto de transferencia de datos para crear o actualizar un proveedor.
+   * @param {Category} category - Entidad de la categoría.
+   * @returns {Supplier} - Entidad del proveedor.
    */
   toEntity(
     createSupplierDto: CreateSupplierDto | UpdateSupplierDto,
@@ -28,9 +28,9 @@ export class SupplierMapper {
   }
 
   /**
-   * Transforms Supplier entity to DTO.
-   * @param {Supplier} supplier - Supplier entity.
-   * @returns {ResponseSupplierDto} - Data transfer object for supplier response.
+   * Transforma la entidad Supplier a DTO.
+   * @param {Supplier} supplier - Entidad del proveedor.
+   * @returns {ResponseSupplierDto} - Objeto de transferencia de datos para la respuesta del proveedor.
    */
   toDto(supplier: Supplier): ResponseSupplierDto {
     const responseSupplierDto = plainToClass(ResponseSupplierDto, supplier)

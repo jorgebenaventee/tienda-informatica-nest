@@ -22,25 +22,26 @@ import {
 import { hash } from 'typeorm/util/StringUtils'
 import { CategoryService } from '../../category/services/category.service'
 import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
+
 /**
- * Service class for managing suppliers.
- * @class
+ * Clase de servicio para gestionar Suppliers.
+ * @class SuppliersService
  */
 @Injectable()
 export class SuppliersService {
   /**
-   * Logger instance for logging service operations.
+   * Instancia de Logger para registrar las operaciones del servicio.
    */
   private logger = new Logger('SuppliersService ')
 
   /**
-   * Constructor for SuppliersService.
+   * Constructor para SuppliersService.
    * @constructor
-   * @param {SupplierMapper} supplierMapper - Mapper for supplier data.
-   * @param {Repository<Supplier>} supplierRepository - Repository for managing supplier entities.
-   * @param {Cache} cacheManager - Cache manager for caching supplier data.
-   * @param {CategoryService} categoryService - Service for managing categories.
-   * @param {NotificationGateway} notificationGateway - Gateway for sending notifications.
+   * @param {SupplierMapper} supplierMapper - Mapper para los datos del Supplier.
+   * @param {Repository<Supplier>} supplierRepository - Repositorio para gestionar las entidades del Supplier.
+   * @param {Cache} cacheManager - Gestor de caché para almacenar en caché los datos del Supplier.
+   * @param {CategoryService} categoryService - Servicio para gestionar las categorías.
+   * @param {NotificationGateway} notificationGateway - Gateway para enviar notificaciones.
    */
   constructor(
     private readonly supplierMapper: SupplierMapper,
@@ -52,10 +53,10 @@ export class SuppliersService {
   ) {}
 
   /**
-   * Fetches all suppliers.
+   * Obtiene todos los Suppliers.
    * @async
-   * @param {PaginateQuery} query - Pagination query.
-   * @returns {Promise<ResponseSupplierDto[]>} - Promise object represents the list of suppliers.
+   * @param {PaginateQuery} query - Consulta de paginación.
+   * @returns {Promise<ResponseSupplierDto[]>} - Lista de Suppliers.
    */
   async findAll(query: PaginateQuery) {
     this.logger.log('Searching for all suppliers')
@@ -105,12 +106,12 @@ export class SuppliersService {
   }
 
   /**
-   * Fetches a supplier by ID.
+   * Obtiene un Supplier por ID.
    * @async
-   * @param {string} id - Supplier ID.
-   * @returns {Promise<ResponseSupplierDto>} - Promise object represents the supplier.
+   * @param {string} id - ID del Supplier.
+   * @returns {Promise<ResponseSupplierDto>} - Supplier.
    */
-  async findOne(id: string) {
+  async findOne(id: string): Promise<ResponseSupplierDto> {
     this.logger.log(`Searching for supplier with id: ${id}`)
 
     const cache: ResponseSupplierDto = await this.cacheManager.get(
@@ -137,12 +138,14 @@ export class SuppliersService {
   }
 
   /**
-   * Creates a new supplier.
+   * Crea un nuevo Supplier.
    * @async
-   * @param {CreateSupplierDto} createSupplierDto - Data transfer object for creating a supplier.
-   * @returns {Promise<ResponseSupplierDto>} - Promise object represents the created supplier.
+   * @param {CreateSupplierDto} createSupplierDto - Objeto de transferencia de datos para crear un Supplier.
+   * @returns {Promise<ResponseSupplierDto>} - Supplier creado.
    */
-  async create(createSupplierDto: CreateSupplierDto) {
+  async create(
+    createSupplierDto: CreateSupplierDto,
+  ): Promise<ResponseSupplierDto> {
     this.logger.log('Creating supplier')
     const category: Category = await this.categoryService.checkCategory(
       createSupplierDto.category,
@@ -156,13 +159,16 @@ export class SuppliersService {
   }
 
   /**
-   * Updates a supplier by ID.
+   * Actualiza un Supplier por ID.
    * @async
-   * @param {string} id - Supplier ID.
-   * @param {UpdateSupplierDto} updateSupplierDto - Data transfer object for updating a supplier.
-   * @returns {Promise<ResponseSupplierDto>} - Promise object represents the updated supplier.
+   * @param {string} id - ID del Supplier.
+   * @param {UpdateSupplierDto} updateSupplierDto - Objeto de transferencia de datos para actualizar un Supplier.
+   * @returns {Promise<ResponseSupplierDto>} - Supplier actualizado.
    */
-  async update(id: string, updateSupplierDto: UpdateSupplierDto) {
+  async update(
+    id: string,
+    updateSupplierDto: UpdateSupplierDto,
+  ): Promise<ResponseSupplierDto> {
     this.logger.log(`Updating supplier with id: ${id}`)
     const supplier = await this.supplierRepository
       .createQueryBuilder('supplier')
@@ -200,12 +206,12 @@ export class SuppliersService {
   }
 
   /**
-   * Removes a supplier by ID.
+   * Elimina un Supplier por ID.
    * @async
-   * @param {string} id - Supplier ID.
-   * @returns {Promise<ResponseSupplierDto>} - Promise object represents the removed supplier.
+   * @param {string} id - ID del Supplier.
+   * @returns {Promise<ResponseSupplierDto>} - Supplier eliminado.
    */
-  async remove(id: string) {
+  async remove(id: string): Promise<ResponseSupplierDto> {
     this.logger.log(`Deleting supplier with id: ${id}`)
     const supplier = await this.supplierRepository
       .createQueryBuilder('supplier')
@@ -226,12 +232,12 @@ export class SuppliersService {
   }
 
   /**
-   * Checks if a supplier exists by ID.
+   * Comprueba si existe un Supplier por ID.
    * @async
-   * @param {string} idSupplier - Supplier ID.
-   * @returns {Promise<Supplier>} - Promise object represents the supplier.
+   * @param {string} idSupplier - ID del Supplier.
+   * @returns {Promise<Supplier>} - Supplier.
    */
-  async checkSupplier(idSupplier: string) {
+  async checkSupplier(idSupplier: string): Promise<Supplier> {
     this.logger.log(`Searching for supplier with name: ${idSupplier}`)
     const supplier = await this.supplierRepository
       .createQueryBuilder('supplier')
@@ -247,10 +253,10 @@ export class SuppliersService {
   }
 
   /**
-   * Invalidates cache keys by pattern.
+   * Invalida las claves de caché por patrón.
    * @async
-   * @param {string} keyPattern - Cache key pattern.
-   * @returns {Promise<void>} - Promise object represents the operation result.
+   * @param {string} keyPattern - Patrón de clave de caché.
+   * @returns {Promise<void>} - Supplier resultado de la operación.
    */
   async invalidateCacheKey(keyPattern: string): Promise<void> {
     const cacheKeys = await this.cacheManager.store.keys()
@@ -260,11 +266,11 @@ export class SuppliersService {
   }
 
   /**
-   * Sends a notification.
+   * Envía una notificación.
    * @async
-   * @param {NotificationType} type - Notification type.
-   * @param {ResponseSupplierDto} data - Notification data.
-   * @returns {Promise<void>} - Promise object represents the operation result.
+   * @param {NotificationType} type - Tipo de notificación.
+   * @param {ResponseSupplierDto} data - Datos de la notificación.
+   * @returns {Promise<void>} - Supplier resultado de la operación.
    */
   async sendNotification(type: NotificationType, data: ResponseSupplierDto) {
     const notification = new Notification<ResponseSupplierDto>(

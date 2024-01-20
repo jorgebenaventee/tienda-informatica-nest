@@ -22,11 +22,26 @@ import {
 import { hash } from 'typeorm/util/StringUtils'
 import { CategoryService } from '../../category/services/category.service'
 import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
-
+/**
+ * Service class for managing suppliers.
+ * @class
+ */
 @Injectable()
 export class SuppliersService {
+  /**
+   * Logger instance for logging service operations.
+   */
   private logger = new Logger('SuppliersService ')
 
+  /**
+   * Constructor for SuppliersService.
+   * @constructor
+   * @param {SupplierMapper} supplierMapper - Mapper for supplier data.
+   * @param {Repository<Supplier>} supplierRepository - Repository for managing supplier entities.
+   * @param {Cache} cacheManager - Cache manager for caching supplier data.
+   * @param {CategoryService} categoryService - Service for managing categories.
+   * @param {NotificationGateway} notificationGateway - Gateway for sending notifications.
+   */
   constructor(
     private readonly supplierMapper: SupplierMapper,
     @InjectRepository(Supplier)
@@ -36,6 +51,12 @@ export class SuppliersService {
     private readonly notificationGateway: NotificationGateway,
   ) {}
 
+  /**
+   * Fetches all suppliers.
+   * @async
+   * @param {PaginateQuery} query - Pagination query.
+   * @returns {Promise<ResponseSupplierDto[]>} - Promise object represents the list of suppliers.
+   */
   async findAll(query: PaginateQuery) {
     this.logger.log('Searching for all suppliers')
 
@@ -83,6 +104,12 @@ export class SuppliersService {
     return dto
   }
 
+  /**
+   * Fetches a supplier by ID.
+   * @async
+   * @param {string} id - Supplier ID.
+   * @returns {Promise<ResponseSupplierDto>} - Promise object represents the supplier.
+   */
   async findOne(id: string) {
     this.logger.log(`Searching for supplier with id: ${id}`)
 
@@ -109,6 +136,12 @@ export class SuppliersService {
     }
   }
 
+  /**
+   * Creates a new supplier.
+   * @async
+   * @param {CreateSupplierDto} createSupplierDto - Data transfer object for creating a supplier.
+   * @returns {Promise<ResponseSupplierDto>} - Promise object represents the created supplier.
+   */
   async create(createSupplierDto: CreateSupplierDto) {
     this.logger.log('Creating supplier')
     const category: Category = await this.categoryService.checkCategory(
@@ -122,6 +155,13 @@ export class SuppliersService {
     return dto
   }
 
+  /**
+   * Updates a supplier by ID.
+   * @async
+   * @param {string} id - Supplier ID.
+   * @param {UpdateSupplierDto} updateSupplierDto - Data transfer object for updating a supplier.
+   * @returns {Promise<ResponseSupplierDto>} - Promise object represents the updated supplier.
+   */
   async update(id: string, updateSupplierDto: UpdateSupplierDto) {
     this.logger.log(`Updating supplier with id: ${id}`)
     const supplier = await this.supplierRepository
@@ -159,6 +199,12 @@ export class SuppliersService {
     }
   }
 
+  /**
+   * Removes a supplier by ID.
+   * @async
+   * @param {string} id - Supplier ID.
+   * @returns {Promise<ResponseSupplierDto>} - Promise object represents the removed supplier.
+   */
   async remove(id: string) {
     this.logger.log(`Deleting supplier with id: ${id}`)
     const supplier = await this.supplierRepository
@@ -179,6 +225,12 @@ export class SuppliersService {
     return dto
   }
 
+  /**
+   * Checks if a supplier exists by ID.
+   * @async
+   * @param {string} idSupplier - Supplier ID.
+   * @returns {Promise<Supplier>} - Promise object represents the supplier.
+   */
   async checkSupplier(idSupplier: string) {
     this.logger.log(`Searching for supplier with name: ${idSupplier}`)
     const supplier = await this.supplierRepository
@@ -194,6 +246,12 @@ export class SuppliersService {
     return supplier
   }
 
+  /**
+   * Invalidates cache keys by pattern.
+   * @async
+   * @param {string} keyPattern - Cache key pattern.
+   * @returns {Promise<void>} - Promise object represents the operation result.
+   */
   async invalidateCacheKey(keyPattern: string): Promise<void> {
     const cacheKeys = await this.cacheManager.store.keys()
     const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
@@ -201,6 +259,13 @@ export class SuppliersService {
     await Promise.all(promises)
   }
 
+  /**
+   * Sends a notification.
+   * @async
+   * @param {NotificationType} type - Notification type.
+   * @param {ResponseSupplierDto} data - Notification data.
+   * @returns {Promise<void>} - Promise object represents the operation result.
+   */
   async sendNotification(type: NotificationType, data: ResponseSupplierDto) {
     const notification = new Notification<ResponseSupplierDto>(
       'supplier',

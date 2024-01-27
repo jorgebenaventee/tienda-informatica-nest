@@ -9,6 +9,7 @@ import { NotificationsModule } from './websockets/notifications/notifications.mo
 import { OrdersModule } from './rest/orders/orders.module'
 import { CacheModule } from '@nestjs/cache-manager'
 import { ClientsModule } from './rest/clients/clients.module'
+import { EmployeesModule } from './rest/employees/employees.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ClientsModule } from './rest/clients/clients.module'
     NotificationsModule,
     OrdersModule,
     ClientsModule,
+    EmployeesModule,
   ],
 })
 export class AppModule {}

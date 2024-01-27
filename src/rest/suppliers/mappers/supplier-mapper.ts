@@ -7,7 +7,7 @@ import { ResponseSupplierDto } from '../dto/response-supplier.dto'
 import { UpdateSupplierDto } from '../dto/update-supplier.dto'
 
 /**
- * Clase Mapper para transformar los datos del proveedor.
+ * Clase EmployeesMapper para transformar los datos del proveedor.
  * @class SupplierMapper
  */
 @Injectable()

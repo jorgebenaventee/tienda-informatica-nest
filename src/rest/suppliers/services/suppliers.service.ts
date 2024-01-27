@@ -37,7 +37,7 @@ export class SuppliersService {
   /**
    * Constructor para SuppliersService.
    * @constructor
-   * @param {SupplierMapper} supplierMapper - Mapper para los datos del Supplier.
+   * @param {SupplierMapper} supplierMapper - EmployeesMapper para los datos del Supplier.
    * @param {Repository<Supplier>} supplierRepository - Repositorio para gestionar las entidades del Supplier.
    * @param {Cache} cacheManager - Gestor de caché para almacenar en caché los datos del Supplier.
    * @param {CategoryService} categoryService - Servicio para gestionar las categorías.

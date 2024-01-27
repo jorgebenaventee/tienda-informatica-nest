@@ -26,4 +26,4 @@ module.exports = {
     'prefer-template': 'error',
     'no-var': 'error',
   },
-};
+}

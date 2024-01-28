@@ -4,6 +4,7 @@ import { EmployeesService } from '../services/employees.service'
 import { CacheModule } from '@nestjs/cache-manager'
 import { ResponseEmployeeDto } from '../dto/response-employee.dto'
 import { Paginated } from 'nestjs-paginate'
+import { BadRequestException, NotFoundException } from '@nestjs/common'
 
 describe('EmployeesController', () => {
   let controller: EmployeesController
@@ -53,7 +54,7 @@ describe('EmployeesController', () => {
           currentPage: 1,
         },
         links: {
-          current: 'http://localhost:3000/employees?page=1',
+          current: 'http://localhost:3000/api/employees?page=1&limit=10',
         },
       } as Paginated<ResponseEmployeeDto>
 
@@ -68,6 +69,165 @@ describe('EmployeesController', () => {
         `http://localhost:3000/api/${paginatedOptions.path}?page=${paginatedOptions.page}&limit=${paginatedOptions.limit}`,
       )
       expect(service.findAll).toHaveBeenCalled()
+    })
+  })
+  describe('findOne', () => {
+    it('should return an employee', async () => {
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'findOne').mockResolvedValueOnce(result)
+      await expect(controller.findOne(1)).resolves.toEqual(result)
+      expect(service.findOne).toHaveBeenCalled()
+      expect(service.findOne).toHaveBeenCalledWith(1)
+    })
+
+    it('should throw NotFoundException', async () => {
+      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException())
+      await expect(controller.findOne(1)).rejects.toThrow(NotFoundException)
+      expect(service.findOne).toHaveBeenCalled()
+    })
+  })
+  describe('create', () => {
+    it('should create an employee', async () => {
+      const employee = {
+        name: 'Test',
+        salary: 1000,
+        position: 'Test',
+        email: 'juancarlos@gmail.com',
+        password: '123456',
+      }
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'create').mockResolvedValueOnce(result)
+      await controller.create(employee)
+      expect(service.create).toHaveBeenCalled()
+      expect(service.create).toHaveBeenCalledWith(employee)
+    })
+    it('should throw BadRequestException name empty', async () => {
+      const employee = {
+        name: 'gv',
+        salary: 1000,
+        position: 'Test',
+        email: 'juancarlos@gmail.com',
+        password: '123456',
+      }
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'create').mockRejectedValue(new BadRequestException())
+      await expect(controller.create(employee)).rejects.toThrow(
+        BadRequestException,
+      )
+    })
+    it('should throw BadRequestException salary negative', async () => {
+      const employee = {
+        name: 'gv',
+        salary: -1000,
+        position: 'Test',
+        email: 'juancarlos@gmail.com',
+        password: '123456',
+      }
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'create').mockRejectedValue(new BadRequestException())
+      await expect(controller.create(employee)).rejects.toThrow(
+        BadRequestException,
+      )
+    })
+    it('should throw BadRequestException position empty', async () => {
+      const employee = {
+        name: 'gv',
+        salary: 1000,
+        position: '',
+        email: 'juancarlos@gmail.com',
+        password: '123456',
+      }
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'create').mockRejectedValue(new BadRequestException())
+      await expect(controller.create(employee)).rejects.toThrow(
+        BadRequestException,
+      )
+    })
+    it('should throw BadRequestException email empty', async () => {
+      const employee = {
+        name: 'gv',
+        salary: 1000,
+        position: 'Test',
+        email: 'sdsd@gmail.com',
+        password: '123456',
+      }
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'create').mockRejectedValue(new BadRequestException())
+      await expect(controller.create(employee)).rejects.toThrow(
+        BadRequestException,
+      )
+    })
+  })
+  describe('update', () => {
+    it('should update an employee', async () => {
+      const employee = {
+        name: 'gv',
+        salary: 1000,
+        position: 'Test',
+        email: 'sdsd@gmail.com',
+        password: '123456',
+      }
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'update').mockResolvedValue(result)
+      await controller.update(1, employee)
+      expect(service.update).toHaveBeenCalled()
+      expect(service.update).toHaveBeenCalledWith(1, employee)
+    })
+    it('should update an employees with BadRequestException name empty', async () => {
+      const employee = {
+        name: '',
+        salary: 1000,
+        position: 'Test',
+        email: 'sdsd@gmail.com',
+        password: '123456',
+      }
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'update').mockRejectedValue(new BadRequestException())
+      await expect(controller.update(1, employee)).rejects.toThrow(
+        BadRequestException,
+      )
+    })
+    it('should update an employees with BadRequestException negative salary', async () => {
+      const employee = {
+        name: 'gv',
+        salary: -1000,
+        position: 'Test',
+        email: 'sdsd@gmail.com',
+        password: '123456',
+      }
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'update').mockRejectedValue(new BadRequestException())
+      await expect(controller.update(1, employee)).rejects.toThrow(
+        BadRequestException,
+      )
+    })
+    it('should update an employees with BadRequestException bad email', async () => {
+      const employee = {
+        name: 'gv',
+        salary: 1000,
+        position: 'Test',
+        email: 'as',
+        password: '123456',
+      }
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'update').mockRejectedValue(new BadRequestException())
+      await expect(controller.update(1, employee)).rejects.toThrow(
+        BadRequestException,
+      )
+    })
+  })
+  describe('remove', () => {
+    it('should remove an employee', async () => {
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'remove').mockResolvedValue(undefined)
+      await controller.remove(1)
+      expect(service.remove).toHaveBeenCalled()
+      expect(service.remove).toHaveBeenCalledWith(1)
+    })
+    it('should remove an employee with BadRequestException', async () => {
+      const result: ResponseEmployeeDto = new ResponseEmployeeDto()
+      jest.spyOn(service, 'remove').mockRejectedValue(new BadRequestException())
+      await expect(controller.remove(1)).rejects.toThrow(BadRequestException)
     })
   })
 })

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsPositive, IsString } from 'class-validator'
+import { IsEmail, IsNotEmpty, IsPositive, IsString } from 'class-validator'
 
 export class CreateEmployeeDto {
   @IsNotEmpty({ message: 'Name cannot be empty' })
@@ -15,6 +15,7 @@ export class CreateEmployeeDto {
 
   @IsNotEmpty({ message: 'Email cannot be empty' })
   @IsString({ message: 'Email must be a string' })
+  @IsEmail({}, { message: 'Email must be a valid email' })
   email: string
 
   @IsNotEmpty({ message: 'Password cannot be empty' })

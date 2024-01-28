@@ -110,30 +110,31 @@ export class EmployeesService {
 
   async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
     this.logger.log(`Updating employee with id: ${id}`)
-    this.findOne(id).then(async (r) => {
-      const resDto = this.employeeMapper.toDto(
-        await this.employeeRepository.save({
-          ...r,
-          ...updateEmployeeDto,
-        }),
-      )
-      await this.sendNotification(NotificationType.UPDATE, resDto)
-      await this.invalidateCache(`all_employees_page_`)
-      await this.invalidateCache(`employee_${id}`)
-      return resDto
+    const existingEmployee = await this.findOne(id)
+
+    const updatedEmployee = await this.employeeRepository.save({
+      ...existingEmployee,
+      ...updateEmployeeDto,
     })
+
+    const updatedEmployeeDto = this.employeeMapper.toDto(updatedEmployee)
+    await this.sendNotification(NotificationType.UPDATE, updatedEmployeeDto)
+    await this.invalidateCache(`all_employees_page_`)
+    await this.invalidateCache(`employee_${id}`)
+
+    return updatedEmployeeDto
   }
 
   async remove(id: number) {
     this.logger.log(`Deleting employee with id: ${id}`)
-    this.findOne(id).then((r) => {
-      this.employeeRepository.save({
-        ...r,
-        isDeleted: true,
-      })
+    const employeeToRemove = await this.findOne(id)
+    await this.employeeRepository.save({
+      ...employeeToRemove,
+      isDeleted: true,
     })
     await this.invalidateCache(`all_employees_page_`)
     await this.invalidateCache(`employee_${id}`)
+    await this.sendNotification(NotificationType.DELETE, employeeToRemove)
   }
 
   async invalidateCache(keyPattern: string): Promise<void> {

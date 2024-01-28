@@ -13,8 +13,14 @@ import { ClientMapper } from './client-mapper/client-mapper'
 import { Employee } from '../employees/entities/employee.entity'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Cache } from 'cache-manager'
-import { FilterOperator, paginate, PaginateQuery } from 'nestjs-paginate'
+import {
+  FilterOperator,
+  paginate,
+  Paginated,
+  PaginateQuery,
+} from 'nestjs-paginate'
 import { hash } from 'typeorm/util/StringUtils'
+import { ClientResponseDto } from './dto/client-response.dto'
 
 @Injectable()
 export class ClientsService {
@@ -27,9 +33,13 @@ export class ClientsService {
   ) {}
 
   async create(createClientDto: CreateClientDto) {
-    const exists = await this.employeeRepository.exist({
+    const existsEmployee = await this.employeeRepository.exist({
       where: { email: createClientDto.email },
     })
+    const existsClient = await this.clientRepository.exist({
+      where: { email: createClientDto.email },
+    })
+    const exists = existsEmployee || existsClient
     if (exists) {
       throw new BadRequestException('Email already exists')
     }
@@ -39,8 +49,8 @@ export class ClientsService {
     return this.clientMapper.fromEntity(savedClient)
   }
 
-  async findAll(query: PaginateQuery) {
-    const cache = await this.cacheManager.get(
+  async findAll(query: PaginateQuery): Promise<Paginated<ClientResponseDto>> {
+    const cache = await this.cacheManager.get<Paginated<ClientResponseDto>>(
       `all_clients_${hash(JSON.stringify(query))}`,
     )
 
@@ -65,7 +75,7 @@ export class ClientsService {
       response,
       60,
     )
-    return response
+    return response as Paginated<ClientResponseDto>
   }
 
   async findOne(id: number) {
@@ -83,9 +93,13 @@ export class ClientsService {
   }
 
   async update(id: number, updateClientDto: UpdateClientDto) {
-    const exists = await this.employeeRepository.exist({
+    const existsEmployee = await this.employeeRepository.exist({
       where: { email: updateClientDto.email },
     })
+    const existsClient = await this.clientRepository.exist({
+      where: { email: updateClientDto.email },
+    })
+    const exists = existsEmployee || existsClient
     if (exists) {
       throw new BadRequestException('Email already exists')
     }

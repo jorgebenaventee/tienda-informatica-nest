@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -20,6 +21,9 @@ export class ClientsController {
 
   @Post()
   create(@Body() createClientDto: CreateClientDto) {
+    if (Object.keys(createClientDto).length === 0) {
+      throw new BadRequestException('Cannot create an empty client')
+    }
     return this.clientsService.create(createClientDto)
   }
 
@@ -38,6 +42,9 @@ export class ClientsController {
     @Param('id', ParseIntPipe) id: string,
     @Body() updateClientDto: UpdateClientDto,
   ) {
+    if (Object.keys(updateClientDto).length === 0) {
+      throw new BadRequestException('Cannot update an empty client')
+    }
     return await this.clientsService.update(+id, updateClientDto)
   }
 

@@ -5,6 +5,7 @@ import { Notification, NotificationType } from './models/notification.model'
 import { ResponseCategoryDto } from '../../rest/category/dto/response-category.dto'
 import { ResponseProductDto } from '../../rest/products/dto/response-product.dto'
 import { ResponseSupplierDto } from '../../rest/suppliers/dto/response-supplier.dto'
+import { ResponseEmployeeDto } from '../../rest/employees/dto/response-employee.dto'
 
 const ENDPOINT: string = 'ws/api/websockets'
 
@@ -17,7 +18,10 @@ export class NotificationGateway {
 
   sendMessage(
     notification: Notification<
-      ResponseCategoryDto | ResponseProductDto | ResponseSupplierDto
+      | ResponseCategoryDto
+      | ResponseProductDto
+      | ResponseSupplierDto
+      | ResponseEmployeeDto
     >,
   ) {
     this.server.emit(notification.type, notification)

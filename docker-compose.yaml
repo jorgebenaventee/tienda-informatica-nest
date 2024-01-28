@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DATABASE}
     ports:
       - ${POSTGRES_PORT}:5432
-    ##volumes:
+      ##volumes:
       ##- ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - tienda-network

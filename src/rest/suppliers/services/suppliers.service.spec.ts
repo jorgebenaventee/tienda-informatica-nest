@@ -12,9 +12,9 @@ import { UpdateSupplierDto } from '../dto/update-supplier.dto'
 import { CategoryService } from '../../category/services/category.service'
 import { Cache } from 'cache-manager'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
-import { SuppliersNotificationGateway } from '../../../websockets/notifications/suppliers-notification.gateway'
 import { Notification } from '../../../websockets/notifications/models/notification.model'
 import { Paginated } from 'nestjs-paginate'
+import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
 
 describe('SuppliersService', () => {
   let service: SuppliersService
@@ -22,7 +22,7 @@ describe('SuppliersService', () => {
   let categoryService: CategoryService
   let mapper: SupplierMapper
   let cacheManager: Cache
-  let notificationGateway: SuppliersNotificationGateway
+  let notificationGateway: NotificationGateway
 
   const categoryServiceMock = {
     checkCategory: jest.fn(),
@@ -55,7 +55,7 @@ describe('SuppliersService', () => {
         { provide: SupplierMapper, useValue: mapperMock },
         { provide: CACHE_MANAGER, useValue: cacheManagerMock },
         {
-          provide: SuppliersNotificationGateway,
+          provide: NotificationGateway,
           useValue: notificationGatewayMock,
         },
       ],
@@ -68,9 +68,7 @@ describe('SuppliersService', () => {
     )
     mapper = module.get<SupplierMapper>(SupplierMapper)
     cacheManager = module.get<Cache>(CACHE_MANAGER)
-    notificationGateway = module.get<SuppliersNotificationGateway>(
-      SuppliersNotificationGateway,
-    )
+    notificationGateway = module.get<NotificationGateway>(NotificationGateway)
   })
 
   it('should be defined', () => {
@@ -94,6 +92,7 @@ describe('SuppliersService', () => {
         skip: jest.fn().mockReturnThis(),
         addOrderBy: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([]),
+        andWhere: jest.fn().mockReturnThis(),
       }
 
       jest
@@ -105,7 +104,7 @@ describe('SuppliersService', () => {
       expect(result.meta.itemsPerPage).toEqual(paginateOptions.limit)
       expect(result.meta.currentPage).toEqual(paginateOptions.page)
       expect(result.links.current).toEqual(
-        `${paginateOptions.path}?page=${paginateOptions.page}&limit=${paginateOptions.limit}&sortBy=id:ASC`,
+        `${paginateOptions.path}?page=${paginateOptions.page}&limit=${paginateOptions.limit}&sortBy=id:ASC&filter.is_deleted=false`,
       )
       expect(cacheManager.get).toHaveBeenCalled()
       expect(cacheManager.set).toHaveBeenCalled()

@@ -6,7 +6,7 @@ import { ResponseCategoryDto } from '../../rest/category/dto/response-category.d
 import { ResponseProductDto } from '../../rest/products/dto/response-product.dto'
 import { ResponseSupplierDto } from '../../rest/suppliers/dto/response-supplier.dto'
 
-const ENDPOINT: string = 'ws/api/categories'
+const ENDPOINT: string = 'ws/api/websockets'
 
 @WebSocketGateway({ namespace: ENDPOINT })
 export class NotificationGateway {

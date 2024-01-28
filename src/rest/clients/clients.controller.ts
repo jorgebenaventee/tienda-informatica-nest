@@ -3,13 +3,16 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
 } from '@nestjs/common'
 import { ClientsService } from './clients.service'
 import { CreateClientDto } from './dto/create-client.dto'
 import { UpdateClientDto } from './dto/update-client.dto'
+import { Paginate, PaginateQuery } from 'nestjs-paginate'
 
 @Controller('clients')
 export class ClientsController {
@@ -21,22 +24,26 @@ export class ClientsController {
   }
 
   @Get()
-  findAll() {
-    return this.clientsService.findAll()
+  async findAll(@Paginate() query: PaginateQuery) {
+    return await this.clientsService.findAll(query)
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.clientsService.findOne(+id)
+  async findOne(@Param('id', ParseIntPipe) id: string) {
+    return await this.clientsService.findOne(+id)
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateClientDto: UpdateClientDto) {
-    return this.clientsService.update(+id, updateClientDto)
+  async update(
+    @Param('id', ParseIntPipe) id: string,
+    @Body() updateClientDto: UpdateClientDto,
+  ) {
+    return await this.clientsService.update(+id, updateClientDto)
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.clientsService.remove(+id)
+  @HttpCode(204)
+  async remove(@Param('id') id: string) {
+    return await this.clientsService.remove(+id)
   }
 }

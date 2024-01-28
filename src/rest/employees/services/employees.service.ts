@@ -3,10 +3,8 @@ import { CreateEmployeeDto } from '../dto/create-employee.dto'
 import { UpdateEmployeeDto } from '../dto/update-employee.dto'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { CategoryService } from '../../category/services/category.service'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Cache } from 'cache-manager'
-import { SuppliersService } from '../../suppliers/services/suppliers.service'
 import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
 import { Employee } from '../entities/employee.entity'
 import { EmployeesMapper } from '../mapper/employees.mapper'
@@ -17,13 +15,11 @@ import {
   paginate,
   PaginateQuery,
 } from 'nestjs-paginate'
-import { ResponseProductDto } from '../../products/dto/response-product.dto'
 import { hash } from 'typeorm/util/StringUtils'
 import {
   Notification,
   NotificationType,
 } from '../../../websockets/notifications/models/notification.model'
-import { ResponseSupplierDto } from '../../suppliers/dto/response-supplier.dto'
 
 @Injectable()
 export class EmployeesService {
@@ -37,6 +33,10 @@ export class EmployeesService {
     private readonly notificationGateway: NotificationGateway,
   ) {}
 
+  /**
+   * Creates a new employee
+   * @param createEmployeeDto
+   */
   async create(createEmployeeDto: CreateEmployeeDto) {
     this.logger.log('Creating employee')
     const employee = this.employeeMapper.toEntity(createEmployeeDto)
@@ -48,6 +48,10 @@ export class EmployeesService {
     return resDto
   }
 
+  /**
+   * Finds all employees
+   * @param query
+   */
   async findAll(query: PaginateQuery) {
     this.logger.log('Finding all employees')
     const cache: ResponseEmployeeDto[] = await this.cacheManager.get(
@@ -57,10 +61,14 @@ export class EmployeesService {
       this.logger.log('Employees found in cache')
       return cache
     }
+
     const page = await paginate(query, this.employeeRepository, {
-      sortableColumns: ['name', 'salary', 'position', 'email'],
+      where: {
+        isDeleted: false,
+      },
+      sortableColumns: ['name', 'salary', 'position', 'email', 'isDeleted'],
       defaultSortBy: [['id', 'ASC']],
-      searchableColumns: ['name', 'salary', 'position', 'email'],
+      searchableColumns: ['name', 'salary', 'position', 'email', 'isDeleted'],
       filterableColumns: {
         name: [FilterOperator.EQ, FilterSuffix.NOT],
         salary: [FilterOperator.EQ, FilterSuffix.NOT],
@@ -74,6 +82,8 @@ export class EmployeesService {
       data: (page.data ?? []).map((employee) =>
         this.employeeMapper.toDto(employee),
       ),
+      meta: page.meta,
+      links: page.links,
     }
 
     await this.cacheManager.set(
@@ -85,6 +95,10 @@ export class EmployeesService {
     return toResponse
   }
 
+  /**
+   * Finds one employee by id
+   * @param id
+   */
   async findOne(id: number) {
     this.logger.log(`Finding employee with id: ${id}`)
     const cache: ResponseEmployeeDto = await this.cacheManager.get(
@@ -108,6 +122,11 @@ export class EmployeesService {
     return toResponse
   }
 
+  /**
+   * Updates an employee
+   * @param id
+   * @param updateEmployeeDto
+   */
   async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
     this.logger.log(`Updating employee with id: ${id}`)
     const existingEmployee = await this.findOne(id)
@@ -125,6 +144,10 @@ export class EmployeesService {
     return updatedEmployeeDto
   }
 
+  /**
+   *  Removes an employee
+   * @param id
+   */
   async remove(id: number) {
     this.logger.log(`Deleting employee with id: ${id}`)
     const employeeToRemove = await this.findOne(id)
@@ -137,6 +160,10 @@ export class EmployeesService {
     await this.sendNotification(NotificationType.DELETE, employeeToRemove)
   }
 
+  /**
+   * Invalidates cache by key pattern
+   * @param keyPattern
+   */
   async invalidateCache(keyPattern: string): Promise<void> {
     const cacheKeys = await this.cacheManager.store.keys()
     const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
@@ -144,6 +171,11 @@ export class EmployeesService {
     await Promise.all(promises)
   }
 
+  /**
+   * Sends a notification
+   * @param type
+   * @param data
+   */
   async sendNotification(type: NotificationType, data: ResponseEmployeeDto) {
     const notification = new Notification<ResponseEmployeeDto>(
       'employee',

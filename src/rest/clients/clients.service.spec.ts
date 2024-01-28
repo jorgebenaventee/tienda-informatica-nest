@@ -163,4 +163,15 @@ describe('ClientsService', () => {
       expect(service.remove(1)).rejects.toThrow('Client with id 1 not found')
     })
   })
+  describe('findByEmail', () => {
+    it('should return client if exists', () => {
+      clientRepository.findOne.mockResolvedValue(client)
+      expect(service.findByEmail(client.email)).resolves.toEqual(client)
+    })
+
+    it('should return null if client does not exist', () => {
+      clientRepository.findOne.mockResolvedValue(undefined)
+      expect(service.findByEmail(client.email)).resolves.toBeNull()
+    })
+  })
 })

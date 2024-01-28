@@ -18,5 +18,6 @@ import { Employee } from '../employees/entities/employee.entity'
     EmployeesModule,
   ],
   providers: [ClientsService, ClientMapper],
+  exports: [ClientsService, ClientMapper],
 })
 export class ClientsModule {}

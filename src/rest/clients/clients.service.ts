@@ -132,4 +132,12 @@ export class ClientsService {
     const promises = keysToDelete.map((key) => this.cacheManager.del(key))
     await Promise.all(promises)
   }
+
+  async findByEmail(email: string) {
+    const client = await this.clientRepository.findOne({ where: { email } })
+    if (!client) {
+      return null
+    }
+    return client
+  }
 }

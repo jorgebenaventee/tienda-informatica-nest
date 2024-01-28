@@ -16,5 +16,6 @@ import { Client } from '../clients/entities/client.entity'
     CacheModule.register(),
     TypeOrmModule.forFeature([Employee, Client]),
   ],
+  exports: [EmployeesService, EmployeesMapper],
 })
 export class EmployeesModule {}

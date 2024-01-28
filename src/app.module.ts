@@ -9,7 +9,8 @@ import { NotificationsModule } from './websockets/notifications/notifications.mo
 import { OrdersModule } from './rest/orders/orders.module'
 import { CacheModule } from '@nestjs/cache-manager'
 import { ClientsModule } from './rest/clients/clients.module'
-import { EmployeesModule } from './rest/employees/employees.module';
+import { EmployeesModule } from './rest/employees/employees.module'
+import { AuthModule } from './rest/auth/auth.module'
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { EmployeesModule } from './rest/employees/employees.module';
     OrdersModule,
     ClientsModule,
     EmployeesModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

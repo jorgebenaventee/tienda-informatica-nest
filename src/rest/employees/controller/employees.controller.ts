@@ -26,6 +26,8 @@ import {
   ApiResponse,
 } from '@nestjs/swagger'
 import { ResponseEmployeeDto } from '../dto/response-employee.dto'
+import { IsNotEmptyObject } from 'class-validator'
+import { EmptyObjectInterceptor } from '../interceptors/EmptyObjetInterceptor'
 
 @UseInterceptors(CacheInterceptor)
 @Controller('employees')
@@ -142,6 +144,7 @@ export class EmployeesController {
   @ApiBadRequestResponse({
     description: 'Employee does not have a valid fields',
   })
+  @UseInterceptors(EmptyObjectInterceptor)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateEmployeeDto: UpdateEmployeeDto,

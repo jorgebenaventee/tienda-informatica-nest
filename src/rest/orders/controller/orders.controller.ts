@@ -10,7 +10,6 @@ import {
   Post,
   Put,
   Query,
-  UseGuards,
 } from '@nestjs/common'
 import { OrdersService } from '../services/orders.service'
 import { CreateOrderDto } from '../dto/create-order.dto'
@@ -19,11 +18,9 @@ import { IdValidatePipe } from '../pipes/id-validate.pipe'
 import { OrderByValidatePipe } from '../pipes/orderby-validate.pipe'
 import { OrderValidatePipe } from '../pipes/order-validate.pipe'
 import { ApiExcludeController } from '@nestjs/swagger'
-import { Roles, RolesGuard } from '../../auth/roles/roles.guard'
-import { JwtAuthGuard } from '../../auth/jwt-auth/jwt-auth.guard'
+import { Roles } from '../../auth/roles/roles.guard'
 
 @Controller('orders')
-@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiExcludeController()
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
@@ -42,7 +39,6 @@ export class OrdersController {
   }
 
   @Get(':id')
-  @Roles('employee')
   async findOne(@Param('id', IdValidatePipe) id: string) {
     return await this.ordersService.findOne(id)
   }
@@ -62,6 +58,7 @@ export class OrdersController {
 
   @Put(':id')
   @Roles('employee')
+  @HttpCode(201)
   async update(
     @Param('id', IdValidatePipe) id: string,
     @Body() updateOrderDto: UpdateOrderDto,

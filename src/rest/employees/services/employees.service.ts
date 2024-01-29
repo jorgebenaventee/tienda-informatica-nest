@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common'
 import { CreateEmployeeDto } from '../dto/create-employee.dto'
 import { UpdateEmployeeDto } from '../dto/update-employee.dto'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -16,10 +22,13 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate'
 import { hash } from 'typeorm/util/StringUtils'
+import { hash as hashPassword } from 'bcryptjs'
 import {
   Notification,
   NotificationType,
 } from '../../../websockets/notifications/models/notification.model'
+import { Client } from '../../clients/entities/client.entity'
+import { HASH_ROUNDS } from '../../utils/constants'
 
 @Injectable()
 export class EmployeesService {
@@ -28,6 +37,8 @@ export class EmployeesService {
   constructor(
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
+    @InjectRepository(Client)
+    private readonly clientRepository: Repository<Client>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly employeeMapper: EmployeesMapper,
     private readonly notificationGateway: NotificationGateway,
@@ -38,8 +49,15 @@ export class EmployeesService {
    * @param createEmployeeDto
    */
   async create(createEmployeeDto: CreateEmployeeDto) {
+    const exists = await this.employeeRepository.exist({
+      where: { email: createEmployeeDto.email },
+    })
+    if (exists) {
+      throw new BadRequestException('Email already exists')
+    }
     this.logger.log('Creating employee')
     const employee = this.employeeMapper.toEntity(createEmployeeDto)
+    employee.password = await hashPassword(employee.password, HASH_ROUNDS)
     const resDto = this.employeeMapper.toDto(
       await this.employeeRepository.save(employee),
     )
@@ -128,15 +146,33 @@ export class EmployeesService {
    * @param updateEmployeeDto
    */
   async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
-    this.logger.log(`Updating employee with id: ${id}`)
-    const existingEmployee = await this.findOne(id)
-
-    const updatedEmployee = await this.employeeRepository.save({
-      ...existingEmployee,
-      ...updateEmployeeDto,
+    const exists = await this.employeeRepository.exist({
+      where: { email: updateEmployeeDto.email },
     })
+    if (exists) {
+      throw new BadRequestException('Email already exists')
+    }
+    this.logger.log(`Updating employee with id: ${id}`)
+    const currentEmployeeDto = await this.findOne(id)
 
-    const updatedEmployeeDto = this.employeeMapper.toDto(updatedEmployee)
+    const employeeToSave = {
+      ...currentEmployeeDto,
+      ...updateEmployeeDto,
+    }
+    if (updateEmployeeDto.password) {
+      employeeToSave.password = await hashPassword(
+        updateEmployeeDto.password,
+        HASH_ROUNDS,
+      )
+    }
+    const savedEmployee = await this.employeeRepository.save(employeeToSave)
+    const resDto = this.employeeMapper.toDto(savedEmployee)
+    await this.sendNotification(NotificationType.UPDATE, resDto)
+    await this.invalidateCache(`all_employees_page_`)
+    await this.invalidateCache(`employee_${id}`)
+    return resDto
+
+    const updatedEmployeeDto = this.employeeMapper.toDto(savedEmployee)
     await this.sendNotification(NotificationType.UPDATE, updatedEmployeeDto)
     await this.invalidateCache(`all_employees_page_`)
     await this.invalidateCache(`employee_${id}`)
@@ -184,5 +220,13 @@ export class EmployeesService {
       new Date(),
     )
     this.notificationGateway.sendMessage(notification)
+  }
+
+  async findByEmail(email: string) {
+    const employee = await this.employeeRepository.findOne({ where: { email } })
+    if (!employee) {
+      return null
+    }
+    return employee
   }
 }

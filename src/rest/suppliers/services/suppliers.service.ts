@@ -60,6 +60,13 @@ export class SuppliersService {
    */
   async findAll(query: PaginateQuery) {
     this.logger.log('Searching for all suppliers')
+    this.logger.log(JSON.stringify(query))
+
+    if (!query.filter) {
+      query.filter = { is_deleted: 'false' }
+    } else if (query.filter.is_deleted === undefined) {
+      query.filter.is_deleted = 'false'
+    }
 
     const cache: ResponseSupplierDto[] = await this.cacheManager.get(
       `all_suppliers_page_${hash(JSON.stringify(query))}`,
@@ -75,13 +82,20 @@ export class SuppliersService {
       .leftJoinAndSelect('supplier.category', 'category')
 
     const page = await paginate(query, suppliers, {
-      sortableColumns: ['name', 'contact', 'address', 'category'],
+      sortableColumns: ['name', 'contact', 'address', 'is_deleted', 'category'],
       defaultSortBy: [['id', 'ASC']],
-      searchableColumns: ['name', 'contact', 'address', 'category'],
+      searchableColumns: [
+        'name',
+        'contact',
+        'address',
+        'is_deleted',
+        'category',
+      ],
       filterableColumns: {
         name: [FilterOperator.CONTAINS, FilterSuffix.NOT, FilterOperator.EQ],
         contact: [FilterOperator.CONTAINS, FilterSuffix.NOT, FilterOperator.EQ],
         address: [FilterOperator.CONTAINS, FilterSuffix.NOT, FilterOperator.EQ],
+        is_deleted: [FilterOperator.EQ],
         category: [
           FilterOperator.CONTAINS,
           FilterSuffix.NOT,
@@ -222,7 +236,7 @@ export class SuppliersService {
     }
     const supplierDeleted = await this.supplierRepository.save({
       ...supplier,
-      isDeleted: true,
+      is_deleted: true,
     })
     const dto = this.supplierMapper.toDto(supplierDeleted)
     await this.invalidateCacheKey('all_suppliers_page_')
@@ -272,7 +286,10 @@ export class SuppliersService {
    * @param {ResponseSupplierDto} data - Datos de la notificación.
    * @returns {Promise<void>} - Supplier resultado de la operación.
    */
-  async sendNotification(type: NotificationType, data: ResponseSupplierDto) {
+  async sendNotification(
+    type: NotificationType,
+    data: ResponseSupplierDto,
+  ): Promise<void> {
     const notification = new Notification<ResponseSupplierDto>(
       'supplier',
       type,

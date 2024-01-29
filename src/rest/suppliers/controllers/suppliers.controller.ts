@@ -64,7 +64,7 @@ export class SuppliersController {
     type: String,
   })
   @ApiQuery({
-    description: 'Filter by name, contact, address, category',
+    description: 'Filter by name, contact, address, is_deleted, category',
     name: 'search',
     required: false,
     type: String,

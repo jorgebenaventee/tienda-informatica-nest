@@ -6,6 +6,7 @@ import { NotificationsModule } from '../../websockets/notifications/notification
 import { CacheModule } from '@nestjs/cache-manager'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Employee } from './entities/employee.entity'
+import { Client } from '../clients/entities/client.entity'
 
 @Module({
   controllers: [EmployeesController],
@@ -13,7 +14,8 @@ import { Employee } from './entities/employee.entity'
   imports: [
     NotificationsModule,
     CacheModule.register(),
-    TypeOrmModule.forFeature([Employee]),
+    TypeOrmModule.forFeature([Employee, Client]),
   ],
+  exports: [EmployeesService, EmployeesMapper],
 })
 export class EmployeesModule {}

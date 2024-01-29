@@ -10,15 +10,15 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Paginated } from 'nestjs-paginate'
 import { hash } from 'typeorm/util/StringUtils'
 import { ResponseCategoryDto } from '../dto/response-category.dto'
-import { CategoryNotificationGateway } from '../../../websockets/notifications/notifications.gateway'
 import { Notification } from '../../../websockets/notifications/models/notification.model'
+import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
 
 describe('CategoryService', () => {
   let service: CategoryService
   let repository: Repository<Category>
   let mapper: CategoryMapper
   let cache: Cache
-  let notificationGateway: CategoryNotificationGateway
+  let notificationGateway: NotificationGateway
 
   const mapperMock = {
     toEntity: jest.fn(),
@@ -46,7 +46,7 @@ describe('CategoryService', () => {
         },
         { provide: CACHE_MANAGER, useValue: cacheMock },
         {
-          provide: CategoryNotificationGateway,
+          provide: NotificationGateway,
           useValue: notificationGatewayMock,
         },
       ],
@@ -56,9 +56,7 @@ describe('CategoryService', () => {
     repository = module.get<Repository<Category>>(getRepositoryToken(Category))
     mapper = module.get<CategoryMapper>(CategoryMapper)
     cache = module.get<Cache>(CACHE_MANAGER)
-    notificationGateway = module.get<CategoryNotificationGateway>(
-      CategoryNotificationGateway,
-    )
+    notificationGateway = module.get<NotificationGateway>(NotificationGateway)
   })
 
   it('should be defined', () => {

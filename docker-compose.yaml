@@ -1,6 +1,6 @@
 services:
   postgres-db:
-    container_name: funkos-db_postgres
+    container_name: tienda-db_postgres
     image: postgres:12-alpine
     restart: always
     env_file: .env
@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DATABASE}
     ports:
       - ${POSTGRES_PORT}:5432
-    ##volumes:
+      ##volumes:
       ##- ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - tienda-network

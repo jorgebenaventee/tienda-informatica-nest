@@ -22,6 +22,12 @@ export type OrderDocument = Order & Document
 })
 export class Order {
   @Prop({
+    type: String,
+    required: true,
+  })
+  id: string
+
+  @Prop({
     type: Number,
     required: true,
   })

@@ -18,6 +18,7 @@ import { IdValidatePipe } from '../pipes/id-validate.pipe'
 import { OrderByValidatePipe } from '../pipes/orderby-validate.pipe'
 import { OrderValidatePipe } from '../pipes/order-validate.pipe'
 import { ApiExcludeController } from '@nestjs/swagger'
+import { Roles } from '../../auth/roles/roles.guard'
 
 @Controller('orders')
 @ApiExcludeController()
@@ -25,6 +26,7 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
+  @Roles('client')
   async findAll(
     @Query('page', new DefaultValuePipe(1)) page: number = 1,
     @Query('limit', new DefaultValuePipe(20)) limit: number = 20,
@@ -42,17 +44,21 @@ export class OrdersController {
   }
 
   @Get('user/:userId')
+  @Roles('employee')
   async findByUserId(@Param('userId', ParseIntPipe) userId: number) {
     return await this.ordersService.findByUserId(userId)
   }
 
   @Post()
   @HttpCode(201)
+  @Roles('employee')
   async create(@Body() createOrderDto: CreateOrderDto) {
     return await this.ordersService.create(createOrderDto)
   }
 
   @Put(':id')
+  @Roles('employee')
+  @HttpCode(201)
   async update(
     @Param('id', IdValidatePipe) id: string,
     @Body() updateOrderDto: UpdateOrderDto,
@@ -61,6 +67,7 @@ export class OrdersController {
   }
 
   @Delete(':id')
+  @Roles('employee')
   @HttpCode(204)
   async remove(@Param('id', IdValidatePipe) id: string) {
     await this.ordersService.remove(id)

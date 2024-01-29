@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common'
-import { CreateSupplierDto } from '../dto/create-supplier.dto'
-import { Supplier } from '../entities/supplier.entity'
-import { Category } from '../../category/entities/category.entity'
-import { plainToClass } from 'class-transformer'
-import { ResponseSupplierDto } from '../dto/response-supplier.dto'
-import { UpdateSupplierDto } from '../dto/update-supplier.dto'
+import { Injectable } from '@nestjs/common';
+import { CreateSupplierDto } from '../dto/create-supplier.dto';
+import { Supplier } from '../entities/supplier.entity';
+import { Category } from '../../category/entities/category.entity';
+import { plainToClass } from 'class-transformer';
+import { ResponseSupplierDto } from '../dto/response-supplier.dto';
+import { UpdateSupplierDto } from '../dto/update-supplier.dto';
 
 /**
  * Clase EmployeesMapper para transformar los datos del proveedor.

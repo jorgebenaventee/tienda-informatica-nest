@@ -4,11 +4,11 @@ import { ResponseCategoryDto } from '../../../src/rest/category/dto/response-cat
 import { INestApplication, NotFoundException } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
 import { CacheModule } from '@nestjs/cache-manager'
-import { JwtAuthGuard } from 'src/rest/auth/jwt-auth/jwt-auth.guard'
+import { JwtAuthGuard } from '../../../src/rest/auth/jwt-auth/jwt-auth.guard'
 import { RolesGuard } from '../../../src/rest/auth/roles/roles.guard'
 import * as request from 'supertest'
 import { CategoryController } from '../../../src/rest/category/controller/category.controller'
-import { CategoryService } from 'src/rest/category/services/category.service'
+import { CategoryService } from '../../../src/rest/category/services/category.service'
 
 describe('categoryController (e2e)', () => {
   let app: INestApplication

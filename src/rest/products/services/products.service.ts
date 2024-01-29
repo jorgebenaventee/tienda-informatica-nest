@@ -1,35 +1,21 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common'
-import { CreateProductDto } from '../dto/create-product.dto'
-import { UpdateProductDto } from '../dto/update-product.dto'
-import { ProductMapper } from '../mapper/product-mapper'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Product } from '../entities/product.entity'
-import { Repository } from 'typeorm'
-import { Category } from '../../category/entities/category.entity'
-import { StorageService } from '../../storage/services/storage.service'
-import { Cache } from 'cache-manager'
-import { CACHE_MANAGER } from '@nestjs/cache-manager'
-import {
-  FilterOperator,
-  FilterSuffix,
-  paginate,
-  PaginateQuery,
-} from 'nestjs-paginate'
-import { hash } from 'typeorm/util/StringUtils'
-import { ResponseProductDto } from '../dto/response-product.dto'
-import { SuppliersService } from '../../suppliers/services/suppliers.service'
-import { CategoryService } from '../../category/services/category.service'
-import {
-  Notification,
-  NotificationType,
-} from '../../../websockets/notifications/models/notification.model'
-import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
+import { ProductMapper } from '../mapper/product-mapper';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Product } from '../entities/product.entity';
+import { Repository } from 'typeorm';
+import { Category } from '../../category/entities/category.entity';
+import { StorageService } from '../../storage/services/storage.service';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { FilterOperator, FilterSuffix, paginate, PaginateQuery } from 'nestjs-paginate';
+import { hash } from 'typeorm/util/StringUtils';
+import { ResponseProductDto } from '../dto/response-product.dto';
+import { SuppliersService } from '../../suppliers/services/suppliers.service';
+import { CategoryService } from '../../category/services/category.service';
+import { Notification, NotificationType } from '../../../websockets/notifications/models/notification.model';
+import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway';
 
 /**
  * Servicio que gestiona las operaciones relacionadas con los productos.

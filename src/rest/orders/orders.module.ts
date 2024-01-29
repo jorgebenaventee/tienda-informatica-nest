@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { OrdersService } from './services/orders.service'
 import { OrdersController } from './controller/orders.controller'
-import { OrdersMapper } from './mapper/orders.mapper'
+import { OrdersMapper } from './mapper/orders-mapper'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Order } from './schemas/order.schema'
 import { MongooseModule, SchemaFactory } from '@nestjs/mongoose'

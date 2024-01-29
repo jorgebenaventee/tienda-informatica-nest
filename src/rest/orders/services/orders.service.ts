@@ -9,7 +9,7 @@ import { Repository } from 'typeorm'
 import { PaginateModel } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
 import { InjectRepository } from '@nestjs/typeorm'
-import { OrdersMapper } from '../mapper/orders.mapper'
+import { OrdersMapper } from '../mapper/orders-mapper'
 import { CreateOrderDto } from '../dto/create-order.dto'
 import { UpdateOrderDto } from '../dto/update-order.dto'
 import { Product } from '../../products/entities/product.entity'
@@ -102,7 +102,7 @@ export class OrdersService {
    * @return Promise con el nuevo pedido creado.
    * @throws BadRequestException si hay problemas con los datos proporcionados.
    */
-  async create(createOrderDto: CreateOrderDto) {
+  async create(createOrderDto: CreateOrderDto): Promise<Order> {
     this.logger.log(`Creating order ${JSON.stringify(createOrderDto)}`)
     console.log(`Saving order: ${createOrderDto}`)
 
@@ -127,7 +127,7 @@ export class OrdersService {
    * @throws NotFoundException si el pedido no se encuentra.
    * @throws BadRequestException si hay problemas con los datos proporcionados.
    */
-  async update(id: string, updateOrderDto: UpdateOrderDto) {
+  async update(id: string, updateOrderDto: UpdateOrderDto): Promise<Order> {
     this.logger.log(
       `Updating order with id ${id} and ${JSON.stringify(updateOrderDto)}`,
     )

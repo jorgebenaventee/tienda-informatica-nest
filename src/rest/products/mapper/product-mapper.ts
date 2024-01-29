@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common'
-import { CreateProductDto } from '../dto/create-product.dto'
-import { Category } from '../../category/entities/category.entity'
-import { Product } from '../entities/product.entity'
-import { plainToClass } from 'class-transformer'
-import { ResponseProductDto } from '../dto/response-product.dto'
-import { Supplier } from '../../suppliers/entities/supplier.entity'
+import { Injectable } from '@nestjs/common';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { Category } from '../../category/entities/category.entity';
+import { Product } from '../entities/product.entity';
+import { plainToClass } from 'class-transformer';
+import { ResponseProductDto } from '../dto/response-product.dto';
+import { Supplier } from '../../suppliers/entities/supplier.entity';
 
 /**
  * Servicio encargado de mapear entre objetos DTO y entidades relacionadas con productos.

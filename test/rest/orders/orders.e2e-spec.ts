@@ -5,6 +5,13 @@ import { CreateOrderDto } from '../../../src/rest/orders/dto/create-order.dto'
 import * as request from 'supertest'
 import { Order } from '../../../src/rest/orders/schemas/order.schema'
 import { OrdersService } from '../../../src/rest/orders/services/orders.service'
+import { TestBed } from '@automock/jest'
+import { OrdersController } from '../../../src/rest/orders/controller/orders.controller'
+import { getRepositoryToken } from '@nestjs/typeorm'
+import { Product } from '../../../src/rest/products/entities/product.entity'
+import { Repository } from 'typeorm'
+import { JwtAuthGuard } from '../../../src/rest/auth/jwt-auth/jwt-auth.guard'
+import { RolesGuard } from '../../../src/rest/auth/roles/roles.guard'
 
 describe('OrdersController (e2e)', () => {
   let app: INestApplication
@@ -79,15 +86,19 @@ describe('OrdersController (e2e)', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [OrdersModule],
+      controllers: [OrdersController],
       providers: [
-        OrdersService,
         {
           provide: OrdersService,
           useValue: mockOrderService,
         },
       ],
-    }).compile()
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile()
 
     app = moduleFixture.createNestApplication()
     await app.init()

@@ -7,6 +7,7 @@ import { OrdersMapper } from '../mapper/orders-mapper'
 import { Product } from '../../products/entities/product.entity'
 import { Repository } from 'typeorm'
 import { getRepositoryToken } from '@nestjs/typeorm'
+import { getModelToken } from '@nestjs/mongoose'
 
 describe('OrdersService', () => {
   let service: OrdersService
@@ -25,8 +26,8 @@ describe('OrdersService', () => {
           useValue: Repository,
         },
         {
-          provide: getRepositoryToken(Order),
-          useClass: Repository,
+          provide: getModelToken(Order.name),
+          useValue: {},
         },
       ],
     }).compile()

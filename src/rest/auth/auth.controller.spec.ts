@@ -20,7 +20,7 @@ describe('AuthController', () => {
 
   describe('signIn', () => {
     it('should return access token', async () => {
-      authService.signIn.mockResolvedValue(createClientDto)
+      authService.signIn.mockResolvedValue({ accessToken: 'token' })
       const result = await controller.signIn(createClientDto)
       expect(result).toHaveProperty('accessToken')
     })
@@ -38,7 +38,7 @@ describe('AuthController', () => {
 
   describe('signUp', () => {
     it('should return access token', async () => {
-      authService.signUp.mockResolvedValue(createClientDto)
+      authService.signUp.mockResolvedValue({ accessToken: 'token' })
       const result = await controller.signUp(createClientDto)
       expect(result).toHaveProperty('accessToken')
     })

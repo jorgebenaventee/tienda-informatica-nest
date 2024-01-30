@@ -21,6 +21,8 @@ import {
   ApiBadRequestResponse,
   ApiBody,
   ApiExcludeEndpoint,
+  ApiNotFoundResponse,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger'
@@ -38,7 +40,10 @@ export class CategoryController {
   @CacheKey('all_categories')
   @CacheTTL(60)
   @Roles('employee')
-  @ApiExcludeEndpoint()
+  @ApiResponse({
+    status: 200,
+    description: 'Categories found',
+  })
   async findAll(@Paginate() query: PaginateQuery) {
     return await this.categoryService.findAll(query)
   }
@@ -47,7 +52,21 @@ export class CategoryController {
   @CacheKey('one_category')
   @CacheTTL(60)
   @Roles('employee')
-  @ApiExcludeEndpoint()
+  @ApiResponse({
+    status: 200,
+    description: 'Category found',
+  })
+  @ApiBadRequestResponse({
+    description: 'Category must be a valid UUID',
+  })
+  @ApiNotFoundResponse({
+    description: 'Category not found',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Category id',
+  })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return await this.categoryService.findOne(id)
   }
@@ -70,8 +89,25 @@ export class CategoryController {
   }
 
   @Put(':id')
-  @ApiExcludeEndpoint()
   @Roles('employee')
+  @ApiResponse({
+    status: 200,
+    description: 'Category updated',
+  })
+  @ApiBadRequestResponse({
+    description: 'Category must be a valid UUID',
+  })
+  @ApiNotFoundResponse({
+    description: 'Category not found',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Category id',
+  })
+  @ApiBody({
+    type: UpdateCategoryDto,
+  })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
@@ -81,7 +117,21 @@ export class CategoryController {
 
   @Delete(':id')
   @Roles('employee')
-  @ApiExcludeEndpoint()
+  @ApiResponse({
+    status: 204,
+    description: 'Category deleted',
+  })
+  @ApiBadRequestResponse({
+    description: 'Category must be a valid UUID',
+  })
+  @ApiNotFoundResponse({
+    description: 'Category not found',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Category id',
+  })
   @HttpCode(204)
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     //return await this.categoryService.remove(id)

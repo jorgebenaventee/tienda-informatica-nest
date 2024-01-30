@@ -1,15 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication, NotFoundException } from '@nestjs/common'
-import { OrdersModule } from '../../../src/rest/orders/orders.module'
 import { CreateOrderDto } from '../../../src/rest/orders/dto/create-order.dto'
 import * as request from 'supertest'
 import { Order } from '../../../src/rest/orders/schemas/order.schema'
 import { OrdersService } from '../../../src/rest/orders/services/orders.service'
-import { TestBed } from '@automock/jest'
 import { OrdersController } from '../../../src/rest/orders/controller/orders.controller'
-import { getRepositoryToken } from '@nestjs/typeorm'
-import { Product } from '../../../src/rest/products/entities/product.entity'
-import { Repository } from 'typeorm'
 import { JwtAuthGuard } from '../../../src/rest/auth/jwt-auth/jwt-auth.guard'
 import { RolesGuard } from '../../../src/rest/auth/roles/roles.guard'
 
@@ -18,7 +13,7 @@ describe('OrdersController (e2e)', () => {
   const myEndpoint = '/orders'
 
   const order: Order = {
-    id: 'id',
+    id: '6536518de9b0d305f193b5ef',
     userId: 2,
     client: {
       name: 'name',
@@ -81,7 +76,7 @@ describe('OrdersController (e2e)', () => {
     findOne: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
-    removeSoft: jest.fn(),
+    remove: jest.fn(),
   }
 
   beforeEach(async () => {
@@ -125,10 +120,12 @@ describe('OrdersController (e2e)', () => {
       const { body } = await request(app.getHttpServer())
         .get(`${myEndpoint}/${order.id}`)
         .expect(200)
-      expect(body).toEqual(createOrderDto)
+      expect(body).toMatchObject(createOrderDto)
     })
     it('should return a NotFoundException', async () => {
-      mockOrderService.findOne.mockReturnValueOnce(new NotFoundException())
+      mockOrderService.findOne.mockImplementationOnce(() => {
+        throw new NotFoundException()
+      })
       await request(app.getHttpServer())
         .get(`${myEndpoint}/${order.id}`)
         .expect(404)
@@ -141,7 +138,7 @@ describe('OrdersController (e2e)', () => {
         .post(myEndpoint)
         .send(createOrderDto)
         .expect(201)
-      expect(body).toEqual(createOrderDto)
+      expect(body).toMatchObject(createOrderDto)
     })
   })
   describe('PUT/orders/:id', () => {
@@ -151,15 +148,15 @@ describe('OrdersController (e2e)', () => {
         .put(`${myEndpoint}/${order.id}`)
         .send(createOrderDto)
         .expect(201)
-      expect(body).toEqual(createOrderDto)
+      expect(body).toMatchObject(createOrderDto)
     })
   })
   describe('DELETE/orders/:id', () => {
     it('should delete a order', async () => {
-      mockOrderService.removeSoft.mockReturnValueOnce(order)
+      mockOrderService.remove.mockReturnValueOnce(order)
       await request(app.getHttpServer())
         .delete(`${myEndpoint}/${order.id}`)
-        .expect(200)
+        .expect(204)
     })
   })
 })

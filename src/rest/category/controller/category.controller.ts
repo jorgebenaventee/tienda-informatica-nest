@@ -20,7 +20,6 @@ import { Paginate, PaginateQuery } from 'nestjs-paginate'
 import {
   ApiBadRequestResponse,
   ApiBody,
-  ApiExcludeEndpoint,
   ApiNotFoundResponse,
   ApiParam,
   ApiResponse,

@@ -7,6 +7,8 @@ import { UpdateSupplierDto } from '../../../src/rest/suppliers/dto/update-suppli
 import { CacheModule } from '@nestjs/cache-manager'
 import { SuppliersController } from '../../../src/rest/suppliers/controllers/suppliers.controller'
 import { SuppliersService } from '../../../src/rest/suppliers/services/suppliers.service'
+import { JwtAuthGuard } from '../../../src/rest/auth/jwt-auth/jwt-auth.guard'
+import { RolesGuard } from '../../../src/rest/auth/roles/roles.guard'
 
 describe('SupplierController (e2e)', () => {
   let app: INestApplication
@@ -60,10 +62,10 @@ describe('SupplierController (e2e)', () => {
         },
       ],
     })
-      /*.overrideGuard(JwtAuthGuard)
+      .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
-      .overrideGuard(RolesAuthGuard)
-      .useValue({ canActivate: () => true })*/
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
       .compile()
 
     app = moduleFixture.createNestApplication()

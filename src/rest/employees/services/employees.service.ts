@@ -44,10 +44,18 @@ export class EmployeesService {
     private readonly notificationGateway: NotificationGateway,
   ) {}
 
+  /**
+   * Creates a new employee
+   * @param createEmployeeDto
+   */
   async create(createEmployeeDto: CreateEmployeeDto) {
-    const exists = await this.employeeRepository.exist({
+    const existsEmployee = await this.employeeRepository.exist({
       where: { email: createEmployeeDto.email },
     })
+    const existsClient = await this.clientRepository.exist({
+      where: { email: createEmployeeDto.email },
+    })
+    const exists = existsEmployee || existsClient
     if (exists) {
       throw new BadRequestException('Email already exists')
     }
@@ -62,6 +70,10 @@ export class EmployeesService {
     return resDto
   }
 
+  /**
+   * Finds all employees
+   * @param query
+   */
   async findAll(query: PaginateQuery) {
     this.logger.log('Finding all employees')
     const cache: ResponseEmployeeDto[] = await this.cacheManager.get(
@@ -71,10 +83,14 @@ export class EmployeesService {
       this.logger.log('Employees found in cache')
       return cache
     }
+
     const page = await paginate(query, this.employeeRepository, {
-      sortableColumns: ['name', 'salary', 'position', 'email'],
+      where: {
+        isDeleted: false,
+      },
+      sortableColumns: ['name', 'salary', 'position', 'email', 'isDeleted'],
       defaultSortBy: [['id', 'ASC']],
-      searchableColumns: ['name', 'salary', 'position', 'email'],
+      searchableColumns: ['name', 'salary', 'position', 'email', 'isDeleted'],
       filterableColumns: {
         name: [FilterOperator.EQ, FilterSuffix.NOT],
         salary: [FilterOperator.EQ, FilterSuffix.NOT],
@@ -88,6 +104,8 @@ export class EmployeesService {
       data: (page.data ?? []).map((employee) =>
         this.employeeMapper.toDto(employee),
       ),
+      meta: page.meta,
+      links: page.links,
     }
 
     await this.cacheManager.set(
@@ -99,6 +117,10 @@ export class EmployeesService {
     return toResponse
   }
 
+  /**
+   * Finds one employee by id
+   * @param id
+   */
   async findOne(id: number) {
     this.logger.log(`Finding employee with id: ${id}`)
     const cache: ResponseEmployeeDto = await this.cacheManager.get(
@@ -122,46 +144,72 @@ export class EmployeesService {
     return toResponse
   }
 
+  /**
+   * Updates an employee
+   * @param id
+   * @param updateEmployeeDto
+   */
   async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
-    const exists = await this.employeeRepository.exist({
-      where: { email: updateEmployeeDto.email },
-    })
-    if (exists) {
-      throw new BadRequestException('Email already exists')
+    if (updateEmployeeDto.email) {
+      const existsEmployee = await this.employeeRepository.exist({
+        where: { email: updateEmployeeDto.email },
+      })
+      const existsClient = await this.clientRepository.exist({
+        where: { email: updateEmployeeDto.email },
+      })
+      const exists = existsEmployee || existsClient
+      if (exists) {
+        throw new BadRequestException('Email already exists')
+      }
     }
     this.logger.log(`Updating employee with id: ${id}`)
-    await this.findOne(id).then(async (r) => {
-      const employeeToSave = {
-        ...r,
-        ...updateEmployeeDto,
-      }
-      if (updateEmployeeDto.password) {
-        employeeToSave.password = await hashPassword(
-          updateEmployeeDto.password,
-          HASH_ROUNDS,
-        )
-      }
-      const savedEmployee = await this.employeeRepository.save(employeeToSave)
-      const resDto = this.employeeMapper.toDto(savedEmployee)
-      await this.sendNotification(NotificationType.UPDATE, resDto)
-      await this.invalidateCache(`all_employees_page_`)
-      await this.invalidateCache(`employee_${id}`)
-      return resDto
-    })
+    const currentEmployeeDto = await this.findOne(id)
+
+    const employeeToSave = {
+      ...currentEmployeeDto,
+      ...updateEmployeeDto,
+    }
+    if (updateEmployeeDto.password) {
+      employeeToSave.password = await hashPassword(
+        updateEmployeeDto.password,
+        HASH_ROUNDS,
+      )
+    }
+    const savedEmployee = await this.employeeRepository.save(employeeToSave)
+    const resDto = this.employeeMapper.toDto(savedEmployee)
+    await this.sendNotification(NotificationType.UPDATE, resDto)
+    await this.invalidateCache(`all_employees_page_`)
+    await this.invalidateCache(`employee_${id}`)
+    return resDto
+
+    const updatedEmployeeDto = this.employeeMapper.toDto(savedEmployee)
+    await this.sendNotification(NotificationType.UPDATE, updatedEmployeeDto)
+    await this.invalidateCache(`all_employees_page_`)
+    await this.invalidateCache(`employee_${id}`)
+
+    return updatedEmployeeDto
   }
 
+  /**
+   *  Removes an employee
+   * @param id
+   */
   async remove(id: number) {
     this.logger.log(`Deleting employee with id: ${id}`)
-    this.findOne(id).then((r) => {
-      this.employeeRepository.save({
-        ...r,
-        isDeleted: true,
-      })
+    const employeeToRemove = await this.findOne(id)
+    await this.employeeRepository.save({
+      ...employeeToRemove,
+      isDeleted: true,
     })
     await this.invalidateCache(`all_employees_page_`)
     await this.invalidateCache(`employee_${id}`)
+    await this.sendNotification(NotificationType.DELETE, employeeToRemove)
   }
 
+  /**
+   * Invalidates cache by key pattern
+   * @param keyPattern
+   */
   async invalidateCache(keyPattern: string): Promise<void> {
     const cacheKeys = await this.cacheManager.store.keys()
     const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
@@ -169,6 +217,11 @@ export class EmployeesService {
     await Promise.all(promises)
   }
 
+  /**
+   * Sends a notification
+   * @param type
+   * @param data
+   */
   async sendNotification(type: NotificationType, data: ResponseEmployeeDto) {
     const notification = new Notification<ResponseEmployeeDto>(
       'employee',

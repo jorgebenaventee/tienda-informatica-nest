@@ -1,4 +1,10 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn } from 'typeorm'
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm'
 import {
   IsBoolean,
   IsDate,
@@ -10,7 +16,7 @@ import {
 
 @Entity('employees')
 export class Employee {
-  @PrimaryColumn({ type: 'int' })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number
   @Column({ type: 'varchar', nullable: false, length: 255 })
   @IsNotEmpty({ message: 'Name cannot be empty' })
@@ -25,7 +31,7 @@ export class Employee {
   @IsString({ message: 'Position must be a string' })
   position: string
   @Column({ type: 'varchar', nullable: false, length: 255 })
-  @IsEmail()
+  @IsEmail({}, { message: 'Email must be a valid email' })
   @IsNotEmpty({ message: 'Email cannot be empty' })
   @IsString({ message: 'Email must be a string' })
   email: string

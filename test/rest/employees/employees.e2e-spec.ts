@@ -8,6 +8,9 @@ import { EmployeesService } from '../../../src/rest/employees/services/employees
 import { EmployeesController } from '../../../src/rest/employees/controller/employees.controller'
 import * as request from 'supertest'
 import { CacheModule } from '@nestjs/cache-manager'
+import { getRepositoryToken } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { Client } from '../../../src/rest/clients/entities/client.entity'
 
 describe('EmployeesController (e2e)', () => {
   let app: INestApplication

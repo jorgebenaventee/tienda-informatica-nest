@@ -1,15 +1,15 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  Param,
   ParseIntPipe,
   HttpCode,
   Put,
   UseInterceptors,
+  Patch,
+  Post,
 } from '@nestjs/common'
 import { EmployeesService } from '../services/employees.service'
 import { CreateEmployeeDto } from '../dto/create-employee.dto'

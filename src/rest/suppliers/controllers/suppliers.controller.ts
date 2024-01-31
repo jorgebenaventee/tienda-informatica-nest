@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
 import { SuppliersService } from '../services/suppliers.service'
@@ -24,15 +25,19 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../../auth/jwt-auth/jwt-auth.guard'
+import { Roles, RolesGuard } from '../../auth/roles/roles.guard'
 
 @Controller('suppliers')
 @ApiTags('Suppliers')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @UseInterceptors(CacheInterceptor)
 export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}
 
   @Get()
   @CacheKey('all_suppliers')
+  @Roles('client')
   @CacheTTL(60)
   @ApiResponse({
     status: 200,
@@ -74,6 +79,7 @@ export class SuppliersController {
   }
 
   @Get(':id')
+  @Roles('client')
   @CacheKey('supplierById')
   @CacheTTL(60)
   @ApiResponse({
@@ -94,6 +100,7 @@ export class SuppliersController {
   }
 
   @Post()
+  @Roles('employee')
   @HttpCode(201)
   @ApiResponse({
     status: 201,
@@ -108,6 +115,7 @@ export class SuppliersController {
   }
 
   @Put(':id')
+  @Roles('employee')
   @HttpCode(201)
   @ApiResponse({
     status: 201,
@@ -134,6 +142,7 @@ export class SuppliersController {
   }
 
   @Delete(':id')
+  @Roles('employee')
   @HttpCode(204)
   @ApiResponse({
     status: 204,

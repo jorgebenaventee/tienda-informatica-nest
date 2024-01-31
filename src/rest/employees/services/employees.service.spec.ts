@@ -12,6 +12,7 @@ import { Cache } from 'cache-manager'
 import { Paginated } from 'nestjs-paginate'
 import { NotFoundException } from '@nestjs/common'
 import { UpdateEmployeeDto } from '../dto/update-employee.dto'
+import { Client } from '../../clients/entities/client.entity'
 
 describe('EmployeesService', () => {
   let service: EmployeesService
@@ -19,6 +20,7 @@ describe('EmployeesService', () => {
   let mapper: EmployeesMapper
   let cacheManager: Cache
   let notificationGateway: NotificationGateway
+  let clientRepository: Repository<Client>
 
   const mockMapper = {
     toEntity: jest.fn(),
@@ -43,6 +45,10 @@ describe('EmployeesService', () => {
         EmployeesService,
         { provide: EmployeesMapper, useValue: mockMapper },
         { provide: getRepositoryToken(Employee), useClass: Repository },
+        {
+          provide: getRepositoryToken(Client),
+          useClass: Repository,
+        },
         { provide: CACHE_MANAGER, useValue: mockCacheManager },
         { provide: NotificationGateway, useValue: mockNotificationGateway },
       ],
@@ -50,6 +56,9 @@ describe('EmployeesService', () => {
 
     employeeReposiroty = module.get<Repository<Employee>>(
       getRepositoryToken(Employee),
+    )
+    clientRepository = module.get<Repository<Client>>(
+      getRepositoryToken(Client),
     )
     mapper = module.get<EmployeesMapper>(EmployeesMapper)
     cacheManager = module.get<Cache>(CACHE_MANAGER)
@@ -72,9 +81,12 @@ describe('EmployeesService', () => {
       }
 
       const mockEmployee = new Employee()
+      mockEmployee.password = '123456'
       const employeeResponseDto = new ResponseEmployeeDto()
 
       jest.spyOn(mapper, 'toEntity').mockReturnValue(mockEmployee)
+      jest.spyOn(employeeReposiroty, 'exist').mockResolvedValue(false)
+      jest.spyOn(clientRepository, 'exist').mockResolvedValue(false)
       jest.spyOn(employeeReposiroty, 'save').mockResolvedValue(mockEmployee)
       jest.spyOn(mapper, 'toDto').mockReturnValue(employeeResponseDto)
       jest.spyOn(cacheManager.store, 'keys').mockResolvedValue([])
@@ -267,6 +279,8 @@ describe('EmployeesService', () => {
 
       jest.spyOn(employeeReposiroty, 'findOneBy').mockResolvedValue(employee)
       jest.spyOn(employeeReposiroty, 'save').mockResolvedValue(employee)
+      jest.spyOn(employeeReposiroty, 'exist').mockResolvedValue(false)
+      jest.spyOn(clientRepository, 'exist').mockResolvedValue(false)
       jest.spyOn(mapper, 'toDto').mockReturnValue(employee)
       jest.spyOn(cacheManager, 'set').mockResolvedValue(null)
       jest.spyOn(notificationGateway, 'sendMessage').mockImplementation()

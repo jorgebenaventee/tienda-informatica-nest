@@ -49,9 +49,13 @@ export class EmployeesService {
    * @param createEmployeeDto
    */
   async create(createEmployeeDto: CreateEmployeeDto) {
-    const exists = await this.employeeRepository.exist({
+    const existsEmployee = await this.employeeRepository.exist({
       where: { email: createEmployeeDto.email },
     })
+    const existsClient = await this.clientRepository.exist({
+      where: { email: createEmployeeDto.email },
+    })
+    const exists = existsEmployee || existsClient
     if (exists) {
       throw new BadRequestException('Email already exists')
     }
@@ -146,11 +150,17 @@ export class EmployeesService {
    * @param updateEmployeeDto
    */
   async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
-    const exists = await this.employeeRepository.exist({
-      where: { email: updateEmployeeDto.email },
-    })
-    if (exists) {
-      throw new BadRequestException('Email already exists')
+    if (updateEmployeeDto.email) {
+      const existsEmployee = await this.employeeRepository.exist({
+        where: { email: updateEmployeeDto.email },
+      })
+      const existsClient = await this.clientRepository.exist({
+        where: { email: updateEmployeeDto.email },
+      })
+      const exists = existsEmployee || existsClient
+      if (exists) {
+        throw new BadRequestException('Email already exists')
+      }
     }
     this.logger.log(`Updating employee with id: ${id}`)
     const currentEmployeeDto = await this.findOne(id)

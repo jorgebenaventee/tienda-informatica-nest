@@ -10,14 +10,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DATABASE}
     ports:
       - ${POSTGRES_PORT}:5432
-      ##volumes:
-      ##- ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    volumes:
+    - ./database/tienda.sql:/docker-entrypoint-initdb.d/tienda.sql
     networks:
       - tienda-network
 
-
-  #volumes:
-  #storage-dir:
   mongo-db:
     container_name: tienda-db_mongo
     image: mongo:5.0
@@ -33,6 +30,30 @@ services:
       - ./database/tienda.js:/docker-entrypoint-initdb.d/tienda.js:ro
     networks:
       - tienda-network
+
+  # Servicio de la API REST
+  tienda-api-rest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tienda-api-rest
+    restart: always
+    env_file: .env.prod
+    ports:
+      - ${API_PORT}:3000
+    volumes:
+      - storage-dir:/app/storage-dir
+      - ./cert:/app/cert
+    networks:
+      - tienda-network
+    depends_on:
+      - postgres-db
+      - mongo-db
+
+  # Volume para guardar los datos de la api rest, como las imágenes
+volumes:
+  storage-dir:
+
 
 networks:
   tienda-network:

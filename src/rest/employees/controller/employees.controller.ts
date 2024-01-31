@@ -8,8 +8,8 @@ import {
   HttpCode,
   Put,
   UseInterceptors,
-  Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common'
 import { EmployeesService } from '../services/employees.service'
 import { CreateEmployeeDto } from '../dto/create-employee.dto'
@@ -28,9 +28,12 @@ import {
 import { ResponseEmployeeDto } from '../dto/response-employee.dto'
 import { IsNotEmptyObject } from 'class-validator'
 import { EmptyObjectInterceptor } from '../interceptors/EmptyObjetInterceptor'
+import { JwtAuthGuard } from '../../auth/jwt-auth/jwt-auth.guard'
+import { Roles, RolesGuard } from '../../auth/roles/roles.guard'
 
-@UseInterceptors(CacheInterceptor)
 @Controller('employees')
+@UseInterceptors(CacheInterceptor)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
@@ -53,6 +56,7 @@ export class EmployeesController {
   @ApiBadRequestResponse({
     description: 'Employee does not have a valid fields',
   })
+  @Roles('employee')
   create(@Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeesService.create(createEmployeeDto)
   }
@@ -93,6 +97,7 @@ export class EmployeesController {
     required: false,
     type: String,
   })
+  @Roles('employee')
   findAll(@Paginate() query: PaginateQuery) {
     return this.employeesService.findAll(query)
   }
@@ -114,6 +119,7 @@ export class EmployeesController {
   @ApiBadRequestResponse({
     description: 'Employee id is not valid',
   })
+  @Roles('employee')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.employeesService.findOne(id)
   }
@@ -144,6 +150,7 @@ export class EmployeesController {
   @ApiBadRequestResponse({
     description: 'Employee does not have a valid fields',
   })
+  @Roles('employee')
   @UseInterceptors(EmptyObjectInterceptor)
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -170,6 +177,7 @@ export class EmployeesController {
   @ApiBadRequestResponse({
     description: 'Employee id is not valid',
   })
+  @Roles('employee')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.employeesService.remove(id)
   }

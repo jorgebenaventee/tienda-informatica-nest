@@ -11,6 +11,8 @@ import { CacheModule } from '@nestjs/cache-manager'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Client } from '../../../src/rest/clients/entities/client.entity'
+import { JwtAuthGuard } from '../../../src/rest/auth/jwt-auth/jwt-auth.guard'
+import { RolesGuard } from '../../../src/rest/auth/roles/roles.guard'
 
 describe('EmployeesController (e2e)', () => {
   let app: INestApplication
@@ -74,7 +76,12 @@ describe('EmployeesController (e2e)', () => {
           useValue: mockEmployeesService,
         },
       ],
-    }).compile()
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile()
 
     app = moduleFixture.createNestApplication()
     await app.init()

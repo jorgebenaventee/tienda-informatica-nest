@@ -12,7 +12,6 @@ import {
 import * as request from 'supertest'
 import { Paginated } from 'nestjs-paginate'
 import { ClientResponseDto } from '../../../src/rest/clients/dto/client-response.dto'
-import { CreateClientDto } from '../../../src/rest/clients/dto/create-client.dto'
 
 describe('ClientsController (e2e)', () => {
   let app: INestApplication
@@ -90,14 +89,36 @@ describe('ClientsController (e2e)', () => {
       mockClientService.create.mockRejectedValue(new NotFoundException())
       await request(app.getHttpServer()).post(myEndpoint).send({}).expect(400)
     })
+  })
 
-    it('should return a BadRequestException if body is not valid', async () => {
-      const a = await request(app.getHttpServer())
-        .post(myEndpoint)
-        .send({ name: 2 })
-        .set('Accept', 'application/json')
-        .set('Content-Type', 'application/json')
-      console.log({ a })
+  describe('PUT/clients/:id', () => {
+    it('should update a client', async () => {
+      mockClientService.update.mockResolvedValueOnce(clientResponseDto)
+      const { body } = await request(app.getHttpServer())
+        .patch(`${myEndpoint}/${clientResponseDto.id}`)
+        .send(createClientDto)
+        .expect(200)
+      expect(body).toMatchObject(clientResponseDto)
+    })
+    it('should return a NotFoundException', async () => {
+      mockClientService.update.mockRejectedValue(new NotFoundException())
+      await request(app.getHttpServer())
+        .put(`${myEndpoint}/1`)
+        .send(createClientDto)
+        .expect(404)
+    })
+  })
+
+  describe('DELETE/clients/:id', () => {
+    it('should delete a client', async () => {
+      mockClientService.remove.mockResolvedValueOnce(undefined)
+      await request(app.getHttpServer())
+        .delete(`${myEndpoint}/${clientResponseDto.id}`)
+        .expect(204)
+    })
+    it('should return a NotFoundException', async () => {
+      mockClientService.remove.mockRejectedValue(new NotFoundException())
+      await request(app.getHttpServer()).delete(`${myEndpoint}/1`).expect(404)
     })
   })
 })

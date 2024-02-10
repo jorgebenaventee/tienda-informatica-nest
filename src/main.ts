@@ -4,11 +4,18 @@ import * as process from 'process'
 import { ValidationPipe } from '@nestjs/common'
 import { swaggerConfig } from './config/swagger/swagger.config'
 import * as dotenv from 'dotenv'
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
 
 dotenv.config()
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create(AppModule, {
+    httpsOptions: {
+      cert: readFileSync(resolve(process.env.SSL_CERT)),
+      key: readFileSync(resolve(process.env.SSL_KEY)),
+    },
+  })
 
   if (process.env.NODE_ENV === 'dev') {
     console.log('🛠️ Iniciando Nestjs Modo desarrollo 🛠️')

@@ -15,7 +15,7 @@ RUN npm ci
 COPY . .
 
 # Realiza los test
-RUN npm run
+RUN npm run test
 
 # Compila la aplicación
 RUN npm run build

@@ -30,6 +30,7 @@ import {
   NotificationType,
 } from '../../../websockets/notifications/models/notification.model'
 import { NotificationGateway } from '../../../websockets/notifications/notifications.gateway'
+import { Supplier } from '../../suppliers/entities/supplier.entity'
 
 /**
  * Servicio que gestiona las operaciones relacionadas con los productos.
@@ -173,12 +174,19 @@ export class ProductsService {
    */
   async update(id: string, updateProductDto: UpdateProductDto) {
     this.logger.log(`Updating product with id: ${id}`)
-    const category: Category = await this.categoryService.checkCategory(
-      updateProductDto.category,
-    )
-    const supplier = await this.supplierService.checkSupplier(
-      updateProductDto.supplier,
-    )
+    let category: Category = undefined
+    let supplier: Supplier = undefined
+
+    if (updateProductDto.category !== undefined) {
+      category = await this.categoryService.checkCategory(
+        updateProductDto.category,
+      )
+    }
+    if (updateProductDto.supplier !== undefined) {
+      supplier = await this.supplierService.checkSupplier(
+        updateProductDto.supplier,
+      )
+    }
     const product = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
@@ -188,6 +196,14 @@ export class ProductsService {
         isDeleted: false,
       })
       .getOne()
+
+    if (category === undefined) {
+      category = product.category
+    }
+    if (supplier === undefined) {
+      supplier = product.supplier
+    }
+
     if (!product || !category) {
       throw new NotFoundException(
         `Product with id: ${id} or category with name: ${updateProductDto.category} not found`,

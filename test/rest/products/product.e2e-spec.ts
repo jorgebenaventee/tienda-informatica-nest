@@ -9,6 +9,7 @@ import { ProductsService } from '../../../src/rest/products/services/products.se
 import { ProductsController } from '../../../src/rest/products/controller/products.controller'
 import { JwtAuthGuard } from '../../../src/rest/auth/jwt-auth/jwt-auth.guard'
 import { RolesGuard } from '../../../src/rest/auth/roles/roles.guard'
+import { ProductExistsGuard } from '../../../src/rest/products/guards/product-exists-guard'
 
 describe('ProductController (e2e)', () => {
   let app: INestApplication
@@ -78,6 +79,8 @@ describe('ProductController (e2e)', () => {
       .useValue({ canActivate: () => true })
       .overrideGuard(RolesGuard)
       .useValue({ canActivate: () => true })
+      .overrideGuard(ProductExistsGuard)
+      .useValue({ canActivate: () => true })
       .compile()
 
     app = moduleFixture.createNestApplication()
@@ -134,7 +137,7 @@ describe('ProductController (e2e)', () => {
     it('should update a product', async () => {
       mockProductService.update.mockReturnValue(productResponse)
       const { body } = await request(app.getHttpServer())
-        .put(`${myEndpoint}/${productResponse.id}`)
+        .put('/products/f5b5f2a0-0fda-4f1e-8a5f-0fbd4d9d9c6e')
         .send(updateProductDto)
         .expect(201)
       body.createdAt = new Date(body.createdAt)

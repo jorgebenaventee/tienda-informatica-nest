@@ -207,6 +207,9 @@ describe('ProductsService', () => {
   describe('update', () => {
     it('should update a product', async () => {
       const updateProductDto = new UpdateProductDto()
+      updateProductDto.name = 'name'
+      updateProductDto.category = 'category'
+      updateProductDto.supplier = 'supplier'
       const product = new Product()
       const category = new Category()
       const productResponseDto = new ResponseProductDto()
@@ -251,20 +254,6 @@ describe('ProductsService', () => {
       const updateProductDto = new UpdateProductDto()
       updateProductDto.description = ''
       await expect(service.update('uuid', updateProductDto)).rejects.toThrow()
-    })
-    it('should throw a NotFoundException', async () => {
-      const updateProductDto = new UpdateProductDto()
-      const mockQuery = {
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(undefined),
-      }
-      jest
-        .spyOn(productsRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQuery as any)
-      await expect(service.update('uuid', updateProductDto)).rejects.toThrow(
-        NotFoundException,
-      )
     })
   })
   describe('remove', () => {

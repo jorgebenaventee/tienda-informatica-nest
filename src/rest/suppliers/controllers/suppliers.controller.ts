@@ -37,7 +37,7 @@ export class SuppliersController {
 
   @Get()
   @CacheKey('all_suppliers')
-  @Roles('client')
+  @Roles('employee')
   @CacheTTL(60)
   @ApiResponse({
     status: 200,
@@ -79,7 +79,7 @@ export class SuppliersController {
   }
 
   @Get(':id')
-  @Roles('client')
+  @Roles('employee')
   @CacheKey('supplierById')
   @CacheTTL(60)
   @ApiResponse({

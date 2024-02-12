@@ -41,14 +41,12 @@ import { JwtAuthGuard } from '../../auth/jwt-auth/jwt-auth.guard'
 
 @Controller('products')
 @UseInterceptors(CacheInterceptor)
-@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiTags('Products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
   @CacheKey('all_products')
-  @Roles('client')
   @CacheTTL(60)
   @ApiResponse({
     status: 200,
@@ -92,7 +90,6 @@ export class ProductsController {
 
   @Get(':id')
   @CacheKey('productById')
-  @Roles('client')
   @CacheTTL(60)
   @ApiResponse({
     status: 200,
@@ -116,6 +113,7 @@ export class ProductsController {
 
   @Post()
   @HttpCode(201)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('employee')
   @ApiResponse({
     status: 201,
@@ -139,6 +137,8 @@ export class ProductsController {
 
   @Put(':id')
   @HttpCode(201)
+  @UseGuards(ProductExistsGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('employee')
   @ApiResponse({
     status: 200,
@@ -172,9 +172,10 @@ export class ProductsController {
   }
 
   @Patch(':id/image')
-  @Roles('employee')
   @HttpCode(201)
   @UseGuards(ProductExistsGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('employee')
   @ApiResponse({
     status: 200,
     description: 'Image updated',
@@ -245,6 +246,8 @@ export class ProductsController {
   }
 
   @Delete(':id')
+  @UseGuards(ProductExistsGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('employee')
   @HttpCode(204)
   @ApiResponse({

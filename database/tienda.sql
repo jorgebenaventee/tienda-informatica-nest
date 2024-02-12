@@ -14,4 +14,5 @@ CREATE TABLE IF NOT EXISTS "public"."employees" (
 );
 
 INSERT INTO "public"."employees" ("id", "name", "salary", "position", "email", "password", "created_at", "updated_at", "is_deleted") VALUES
-(1, 'admin', '1000.00', 'admin', 'admin@admin.com', '$2a$05$2Gh2ruDg.1.dAr0c7AohRuP1KBa.pFJlBc21HD666SAfcSGCrDypO', '2021-01-01 00:00:00', '2021-01-01 00:00:00', false);
+(1, 'admin', '1000.00', 'admin', 'admin@admin.com', '$2a$05$7c4TGYSzPBLBcOBV.ve4yOdTCpxzB1/LUTUuqI5narvHPL4QNvP4W', '2021-01-01 00:00:00', '2021-01-01 00:00:00', false);
+-- admin, admin1234
